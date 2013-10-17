@@ -430,6 +430,8 @@
   // Throws `Error` if both the `isConcurrent` and `hasHistory` options are
   //   specified.
   function State(name, opts) {
+    if (!(this instanceof State)) { return new State(name, opts); }
+
     opts = opts || {};
 
     if (opts.isConcurrent && opts.hasHistory) {

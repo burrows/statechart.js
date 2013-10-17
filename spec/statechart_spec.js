@@ -48,6 +48,12 @@ describe('State constructor function', function() {
       new State('a', {isConcurrent: true, hasHistory: true});
     }).toThrow('State: history states are not allowed on concurrent states');
   });
+
+  it('should guard against not using the `new` operator', function() {
+    expect(function() {
+      State('a');
+    }).not.toThrow();
+  });
 });
 
 describe('State#addSubstate', function() {
