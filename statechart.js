@@ -67,7 +67,7 @@
         result = result.concat(flatten(array[i]));
       }
       else {
-        result.push(array);
+        result.push(array[i]);
       }
     }
 
@@ -141,7 +141,7 @@
     }
 
     if (!next) {
-      throw new Error('State#resolve: could not resolve path ' + origPath + ' from state ' + origState.toString());
+      throw new Error('State#resolve: could not resolve path ' + origPath + ' from ' + origState);
     }
 
     return path.length === 0 ? next :
@@ -161,7 +161,7 @@
     }
 
     if (!p) {
-      throw new Error('State#findPivot: states ' + this.toString() + ' and ' + other.toString() + ' do not belong to the same statechart');
+      throw new Error('State#findPivot: states ' + this + ' and ' + other + ' do not belong to the same statechart');
     }
 
     return p;
@@ -235,11 +235,9 @@
     //  throw new Error(Z.fmt("Z.State.enterClustered: attempted to enter multiple substates of %@: %@", this, nexts.pluck('name').join(', ')));
     //}
 
-    next = nexts[0];
-
     if (!(next = nexts[0]) && sstates.length > 0) {
       if (this.__condition__) {
-        paths  = [flatten(this.__condition__.call(this, opts.context))];
+        paths  = flatten([this.__condition__.call(this, opts.context)]);
         states = [];
         for (i = 0, n = paths.length; i < n; i++) {
           states.push(resolve.call(this, paths[i]));
@@ -279,7 +277,7 @@
   //
   // Returns the receiver.
   function enterConcurrent(states, opts) {
-    var root = this.root(), sstate, pivots, name, i, n;
+    var root = this.root(), sstate, dstates, name, i, n;
 
     if (!this.__isCurrent__ || opts.force) {
       if (root.trace && this !== root) {
@@ -292,14 +290,14 @@
 
     for (name in this.substates) {
       if (!this.substates.hasOwnProperty(name)) { continue; }
-      sstate = this.substates[name];
-      pivots = [];
+      sstate  = this.substates[name];
+      dstates = [];
       for (i = 0, n = states.length; i < n; i++) {
         if (findPivot.call(sstate, states[i]) === sstate) {
-          pivots.push(sstate);
+          dstates.push(states[i]);
         }
       }
-      enter.call(sstate, pivots, opts);
+      enter.call(sstate, dstates, opts);
     }
 
     return this;
@@ -447,45 +445,45 @@
     this.trace         = false;
   }
 
-  State.prototype = {
-    // Public: Convenience method for creating a new statechart. Simply creates a
-    // root state and invokes the given function in the context of that state.
-    //
-    // opts - An object of options to pass the to `Z.State` constructor (default:
-    //        `null`).
-    // f    - A function object to invoke in the context of the newly created root
-    //        state (default: `null`).
-    //
-    // Examples
-    //
-    //   var sc = Z.State.define({isConcurrent: true}, function() {
-    //     this.state('a');
-    //     this.state('b');
-    //     this.state('c');
-    //   });
-    //
-    // Returns the newly created root state.
-    define: function() {
-      var opts = {}, f = null, s;
+  // Public: Convenience method for creating a new statechart. Simply creates a
+  // root state and invokes the given function in the context of that state.
+  //
+  // opts - An object of options to pass the to the `State` constructor
+  //        (default: `null`).
+  // f    - A function object to invoke in the context of the newly created root
+  //        state (default: `null`).
+  //
+  // Examples
+  //
+  //   var sc = State.define({isConcurrent: true}, function() {
+  //     this.state('a');
+  //     this.state('b');
+  //     this.state('c');
+  //   });
+  //
+  // Returns the newly created root state.
+  State.define = function() {
+    var opts = {}, f = null, s;
 
-      if (arguments.length === 2) {
+    if (arguments.length === 2) {
+      opts = arguments[0];
+      f    = arguments[1];
+    }
+    else if (arguments.length === 1) {
+      if (typeof arguments[0] === 'function') {
+        f = arguments[0];
+      }
+      else {
         opts = arguments[0];
-        f    = arguments[1];
       }
-      else if (arguments.length === 1) {
-        if (typeof arguments[0] === 'function') {
-          f = arguments[0];
-        }
-        else {
-          opts = arguments[0];
-        }
-      }
+    }
 
-      s = this.create('__root__', opts);
-      if (f) { f.call(s); }
-      return s;
-    },
+    s = new State('__root__', opts);
+    if (f) { f.call(s); }
+    return s;
+  };
 
+  State.prototype = {
     // Public: Creates a substate with the given name and adds it as a substate to
     // the receiver state. If a `Z.State` object is given, then it simply adds the
     // state as a substate. This allows you to split up the definition of your
@@ -570,11 +568,11 @@
     // Returns nothing.
     C: function(f) {
       if (this.hasHistory) {
-        throw new Error('State.C: a state may not have both condition and history states: ' + this.toString());
+        throw new Error('State#C: a state may not have both condition and history states: ' + this);
       }
 
       if (this.isConcurrent) {
-        throw new Error('Z.State.C: a concurrent state may not have a condition state: ' + this.toString());
+        throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
       }
 
       this.__condition__ = f;
@@ -700,7 +698,7 @@
     // Throws an `Error` if a destination path is not reachable from the receiver.
     goto: function() {
       var root   = this.root(),
-          paths  = slice.call(arguments), // FIXME: flatten
+          paths  = flatten(slice.call(arguments)),
           opts   = typeof paths[paths.length - 1] === 'object' ? paths.pop() : {},
           states = [],
           pivots = [],
@@ -714,6 +712,11 @@
         pivots.push(findPivot.call(this, states[i]));
       }
 
+      //FIXME: write a uniq helper
+      //if (pivots.uniq().size() > 1) {
+      //  throw new Error(Z.fmt("Z.State.goto: multiple pivot states found between state %@ and paths %@", this, paths.join(', ')));
+      //}
+
       pivot = pivots[0] || this;
 
       if (root.trace) {
@@ -721,19 +724,14 @@
       }
 
       if (!this.__isCurrent__ && this.superstate) {
-        throw new Error('State#goto: state ' + this.toString() + ' is not current');
+        throw new Error('State#goto: state ' + this + ' is not current');
       }
-
-      //FIXME: write a uniq helper
-      //if (pivots.uniq().size() > 1) {
-      //  throw new Error(Z.fmt("Z.State.goto: multiple pivot states found between state %@ and paths %@", this, paths.join(', ')));
-      //}
 
       // if the pivot state is a concurrent state and is not also the starting
       // state, then we're attempting to cross a concurrency boundary, which is
       // not allowed
       if (pivot.isConcurrent && pivot !== this) {
-        throw new Error('State#goto: one or more of the given paths are not reachable from state ' + this.toString() + ': ' +  paths.join(', '));
+        throw new Error('State#goto: one or more of the given paths are not reachable from state ' + this + ': ' +  paths.join(', '));
       }
 
       queueTransition.call(root, pivot, states, opts);
@@ -759,7 +757,7 @@
       var args = slice.call(arguments), handled;
 
       if (!this.__isCurrent__) {
-        throw new Error('State#send: attempted to send an action to a state that is not current: ' + this.toString());
+        throw new Error('State#send: attempted to send an action to a state that is not current: ' + this);
       }
 
       handled = this.isConcurrent ? sendConcurrent.apply(this, arguments) :
@@ -784,7 +782,9 @@
     //
     // Returns `true` or `false`.
     // Throws `Error` if the path cannot be resolved.
-    isCurrent: function(path) { return resolve.call(this, path).__isCurrent__; }
+    isCurrent: function(path) { return resolve.call(this, path).__isCurrent__; },
+
+    toString: function() { return 'State(' + this.path() + ')'; }
   };
 
   exports.State = State;
