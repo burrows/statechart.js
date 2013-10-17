@@ -53,6 +53,7 @@
 //   door.send('lockDoor');
 //   door.current();          // => [ '/closed/locked' ]
 (function(exports) {
+  "use strict";
   var slice = Array.prototype.slice;
 
   function isArray(o) {

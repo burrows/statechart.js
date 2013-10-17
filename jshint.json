@@ -17,8 +17,6 @@
   "dojo"          : false,
 
   "predef"        : [
-    "Z",
-    "$",
     "expect",
     "describe",
     "it",
@@ -26,8 +24,7 @@
     "afterEach",
     "spyOn",
     "waits",
-    "waitsFor",
-    "Test"
+    "waitsFor"
   ],
 
   // Development.
@@ -36,8 +33,9 @@
 
   // ECMAScript 5.
   "es5"           : true,   // Allow ECMAScript 5 syntax.
-  "strict"        : false,  // Require `use strict` pragma  in every file.
-  "globalstrict"  : false,  // Allow global "use strict" (also enables 'strict').
+  "strict"        : true,   // Require `use strict` pragma  in every file.
+  "globalstrict"  : true,   // Allow global "use strict" (also enables 'strict').
+  "validthis"     : true,   // Allow `this` in non-constructor functions.
 
   // The Good Parts.
   "asi"           : false,  // Tolerate Automatic Semicolon Insertion (no semicolons).
