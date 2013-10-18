@@ -119,50 +119,6 @@
     return a;
   }
 
-  // Internal: Resolves a string path into an actual `State` object. Paths not
-  // starting with a '/' are resolved relative to the receiver state, paths that
-  // do start with a '/' are resolved relative to the root state.
-  //
-  // path      - A string containing the path to resolve or an array of path
-  //             segments.
-  // origPath  - A string containing the original path that we're attempting to
-  //             resolve. Multiple recursive calls are made to this method so we
-  //             need to pass along the original string path for error messages
-  //             in the case where the path cannot be resolved.
-  // origState - The state where path resolution was originally attempted from.
-  //
-  // Returns the `State` object the path represents.
-  // Throws `Error` if the path cannot be resolved.
-  function resolve(path, origPath, origState) {
-    var head, next;
-
-    origPath  = origPath || path;
-    origState = origState || this;
-    path      = typeof path === 'string' ? path.split('/') : path;
-    head      = path.shift();
-
-    switch (head) {
-    case '':
-      next = this.root();
-      break;
-    case '.':
-      next = this;
-      break;
-    case '..':
-      next = this.superstate;
-      break;
-    default:
-      next = this.substateMap[head];
-    }
-
-    if (!next) {
-      throw new Error('State#resolve: could not resolve path ' + origPath + ' from ' + origState);
-    }
-
-    return path.length === 0 ? next :
-      resolve.call(next, path, origPath, origState);
-  }
-
   // Internal: Finds the pivot state between the receiver and the given state.
   // The pivot state is the first common ancestor between the two states.
   //
@@ -253,7 +209,7 @@
         paths  = flatten([this.__condition__.call(this, opts.context)]);
         states = [];
         for (i = 0, n = paths.length; i < n; i++) {
-          states.push(resolve.call(this, paths[i]));
+          states.push(this.resolve(paths[i]));
         }
         return enterClustered.call(this, states, opts);
       }
@@ -710,7 +666,7 @@
           pivot, i, n;
 
       for (i = 0, n = paths.length; i < n; i++) {
-        states.push(resolve.call(this, paths[i]));
+        states.push(this.resolve(paths[i]));
       }
 
       for (i = 0, n = states.length; i < n; i++) {
@@ -788,15 +744,48 @@
     // Throws `Error` if the path cannot be resolved.
     isCurrent: function(path) { return this.resolve(path).__isCurrent__; },
 
-    // Public: Returns the `State` object at the given path. The path may be
-    // relative to the receiver state or a full path to any state in the
-    // statechart.
+    // Public: Resolves a string path into an actual `State` object. Paths not
+    // starting with a '/' are resolved relative to the receiver state, paths that
+    // do start with a '/' are resolved relative to the root state.
     //
-    // path - A string containing a path to a state.
+    // path      - A string containing the path to resolve or an array of path
+    //             segments.
+    // origPath  - A string containing the original path that we're attempting to
+    //             resolve. Multiple recursive calls are made to this method so we
+    //             need to pass along the original string path for error messages
+    //             in the case where the path cannot be resolved.
+    // origState - The state where path resolution was originally attempted from.
     //
-    // Returns a `State` object.
-    // Throws `Error` if the state can not be resolved.
-    resolve: function(path) { return resolve.call(this, path); },
+    // Returns the `State` object the path represents.
+    // Throws `Error` if the path cannot be resolved.
+    resolve: function(path, origPath, origState) {
+      var head, next;
+
+      origPath  = origPath || path;
+      origState = origState || this;
+      path      = typeof path === 'string' ? path.split('/') : path;
+      head      = path.shift();
+
+      switch (head) {
+      case '':
+        next = this.root();
+        break;
+      case '.':
+        next = this;
+        break;
+      case '..':
+        next = this.superstate;
+        break;
+      default:
+        next = this.substateMap[head];
+      }
+
+      if (!next) {
+        throw new Error('State#resolve: could not resolve path ' + origPath + ' from ' + origState);
+      }
+
+      return path.length === 0 ? next : next.resolve(path, origPath, origState);
+    },
 
     // Public: Returns a formatted string with the state's full path.
     toString: function() { return 'State(' + this.path() + ')'; }
