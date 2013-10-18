@@ -187,8 +187,7 @@
   // Throws an `Error` if the given destination states include multiple
   //   substates.
   function enterClustered(states, opts) {
-    var root    = this.root(),
-        selflen = _path.call(this).length,
+    var selflen = _path.call(this).length,
         nexts   = [],
         paths, cur, next, i, n;
 
@@ -224,10 +223,7 @@
     if (cur && cur !== next) { exit.call(cur, opts); }
 
     if (!this.__isCurrent__ || opts.force) {
-      if (root.trace && this !== root) {
-        console.log("State: entering state '" + this.path().join(', ') + "'" + (this.__isCurrent__ ? ' (forced)' : ''));
-      }
-
+      trace.call(this, "State: [ENTER]  : " + this.path() + (this.__isCurrent__ ? ' (forced)' : ''));
       this.__isCurrent__ = true;
       if (typeof this.enter === 'function') { this.enter(opts.context); }
     }
@@ -246,13 +242,10 @@
   //
   // Returns the receiver.
   function enterConcurrent(states, opts) {
-    var root = this.root(), sstate, dstates, i, j, ni, nj;
+    var sstate, dstates, i, j, ni, nj;
 
     if (!this.__isCurrent__ || opts.force) {
-      if (root.trace && this !== root) {
-        console.log("State: entering state '" + this.path().join(', ') + "'" + (this.__isCurrent__ ? ' (forced)' : ''));
-      }
-
+      trace.call(this, "State: [ENTER]  : " + this.path() + (this.__isCurrent__ ? ' (forced)' : ''));
       this.__isCurrent__ = true;
       if (typeof this.enter === 'function') { this.enter(opts.context); }
     }
@@ -294,7 +287,7 @@
   //
   // Returns the receiver.
   function exitClustered(opts) {
-    var root = this.root(), cur, i, n;
+    var cur, i, n;
 
     for (i = 0, n = this.substates.length; i < n; i++) {
       if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
@@ -306,10 +299,7 @@
 
     if (typeof this.exit === 'function') { this.exit(opts.context); }
     this.__isCurrent__ = false;
-
-    if (root.trace && this !== root) {
-      console.log("State: exiting state '" + this.path().join(', ') + "'");
-    }
+    trace.call(this, "State: [EXIT]   : " + this.path());
 
     return this;
   }
@@ -330,10 +320,7 @@
 
     if (typeof this.exit === 'function') { this.exit(opts.context); }
     this.__isCurrent__ = false;
-
-    if (root.trace && this !== root) {
-      console.log("State: exiting state '" + this.path().join(', ') + "'");
-    }
+    if (this !== root) { trace.call(this, "State: [EXIT]   : " + this.path()); }
 
     return this;
   }
@@ -379,6 +366,16 @@
     }
 
     return handled;
+  }
+
+  // Internal: Logs the given message. How the message gets logged is determined
+  // by the `State.logger` property. By default this is `console`, but can be
+  // setto use another logger object. It assumes that there is an `info` method
+  // on the logger object.
+  function trace(message) {
+    var logger = State.logger || console;
+    if (!this.root().trace || !logger) { return; }
+    logger.info(message);
   }
 
   // Public: The `State` constructor.
@@ -679,9 +676,7 @@
 
       pivot = pivots[0] || this;
 
-      if (root.trace) {
-        console.log('State: transitioning to states [' +  paths.join(', ') + ']');
-      }
+      trace.call(this, 'State: [GOTO]   : ' + this + ' -> [' + states.join(', ') + ']');
 
       if (!this.__isCurrent__ && this.superstate) {
         throw new Error('State#goto: state ' + this + ' is not current');
@@ -718,6 +713,10 @@
 
       if (!this.__isCurrent__) {
         throw new Error('State#send: attempted to send an action to a state that is not current: ' + this);
+      }
+
+      if (this === this.root()) {
+        trace.call(this, 'State: [ACTION] : ' + args[0]);
       }
 
       handled = this.isConcurrent ? sendConcurrent.apply(this, arguments) :
