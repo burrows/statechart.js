@@ -105,7 +105,7 @@
     return a;
   }
 
-  // Internal: Resolves a string path into an actual `Z.State` object. Paths not
+  // Internal: Resolves a string path into an actual `State` object. Paths not
   // starting with a '/' are resolved relative to the receiver state, paths that
   // do start with a '/' are resolved relative to the root state.
   //
@@ -785,7 +785,17 @@
     //
     // Returns `true` or `false`.
     // Throws `Error` if the path cannot be resolved.
-    isCurrent: function(path) { return resolve.call(this, path).__isCurrent__; },
+    isCurrent: function(path) { return this.resolve(path).__isCurrent__; },
+
+    // Public: Returns the `State` object at the given path. The path may be
+    // relative to the receiver state or a full path to any state in the
+    // statechart.
+    //
+    // path - A string containing a path to a state.
+    //
+    // Returns a `State` object.
+    // Throws `Error` if the state can not be resolved.
+    resolve: function(path) { return resolve.call(this, path); },
 
     toString: function() { return 'State(' + this.path() + ')'; }
   };

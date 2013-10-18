@@ -683,5 +683,59 @@ describe('State#isCurrent', function() {
   });
 });
 
+describe('State#resolve', function() {
+  var root, s, s1, s2, s11, s12, s21, s22;
+
+  beforeEach(function() {
+    root = new State('root');
+    s    = new State('s');
+    s1   = new State('s1');
+    s2   = new State('s2');
+    s11  = new State('s11');
+    s12  = new State('s12');
+    s21  = new State('s21');
+    s22  = new State('s22');
+
+    root.addSubstate(s);
+    s.addSubstate(s1);
+    s.addSubstate(s2);
+    s1.addSubstate(s11);
+    s1.addSubstate(s12);
+    s2.addSubstate(s21);
+    s2.addSubstate(s22);
+  });
+
+  it('should return the state object at the given full path from the root state', function() {
+    expect(root.resolve('/s')).toBe(s);
+    expect(root.resolve('/s/s1')).toBe(s1);
+    expect(root.resolve('/s/s2/s22')).toBe(s22);
+  });
+
+  it('should return the state object at the given relative path from the root state', function() {
+    expect(root.resolve('s')).toBe(s);
+    expect(root.resolve('s/s1')).toBe(s1);
+    expect(root.resolve('s/s1/../s2')).toBe(s2);
+  });
+
+  it('should return the state object at the given full path from a child state', function() {
+    expect(s12.resolve('/s')).toBe(s);
+    expect(s22.resolve('/s/s1')).toBe(s1);
+    expect(s21.resolve('/s/s2/s22')).toBe(s22);
+  });
+
+  it('should resolve the state object at the given relative path from a child state', function() {
+    expect(s1.resolve('s12')).toBe(s12);
+    expect(s1.resolve('s11')).toBe(s11);
+    expect(s22.resolve('../..')).toBe(s);
+    expect(s22.resolve('../../..')).toBe(root);
+  });
+
+  it('should throw an exception when given an invalid path', function() {
+    expect(function() {
+      root.resolve('/a/b/x');
+    }).toThrow("State#resolve: could not resolve path /a/b/x from " + root);
+  });
+});
+
 }());
 
