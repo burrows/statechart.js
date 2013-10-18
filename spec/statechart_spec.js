@@ -57,15 +57,26 @@ describe('State constructor function', function() {
 });
 
 describe('State#addSubstate', function() {
-  it('should add the given state to the substates hash', function() {
+  it('should add the given state to the substates array', function() {
     var a = new State('a'),
         b = new State('b'),
         c = new State('c');
 
     a.addSubstate(b);
-    expect(a.substates).toEqual({b: b});
+    expect(a.substates).toContain(b);
     a.addSubstate(c);
-    expect(a.substates).toEqual({b: b, c: c});
+    expect(a.substates).toContain(c);
+  });
+
+  it('should add the given state tot he subtateMap object', function() {
+    var a = new State('a'),
+        b = new State('b'),
+        c = new State('c');
+
+    a.addSubstate(b);
+    expect(a.substateMap).toEqual({b: b});
+    a.addSubstate(c);
+    expect(a.substateMap).toEqual({b: b, c: c});
   });
 
   it('should set the superstate property of the given state', function() {
@@ -509,7 +520,8 @@ describe('State#state', function() {
   it('should create a substate with the given name on the receiver', function() {
     var x = root.state('x');
     expect(x instanceof State).toBe(true);
-    expect(root.substates['x']).toBe(x);
+    expect(root.substates).toContain(x);
+    expect(root.substateMap['x']).toBe(x);
   });
 
   it('should pass the options to the `Z.State` constructor', function() {
@@ -528,7 +540,8 @@ describe('State#state', function() {
 
       root.state(s);
 
-      expect(root.substates['s']).toBe(s);
+      expect(root.substates).toContain(s);
+      expect(root.substateMap['s']).toBe(s);
       expect(s.superstate).toBe(root);
     });
   });
@@ -568,11 +581,11 @@ describe('State#send', function() {
 
   it('should send the action to all current states', function() {
     root.send('someAction');
-    expect(calls).toContain(root);
-    expect(calls).toContain(a);
-    expect(calls).toContain(b);
-    expect(calls).toContain(d);
-    expect(calls).toContain(e);
+    expect(calls[0]).toBe(b);
+    expect(calls[1]).toBe(a);
+    expect(calls[2]).toBe(e);
+    expect(calls[3]).toBe(d);
+    expect(calls[4]).toBe(root);
   });
 
   it('should pass additional arguments to the action handler', function() {

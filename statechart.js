@@ -1,4 +1,3 @@
-// FIXME: maintain substate order
 // The `Z.State` type provides an implementation of a
 // [Harel Statechart](http://en.wikipedia.org/wiki/State_diagram#Harel_statechart).
 //
@@ -89,13 +88,6 @@
     return false;
   }
 
-  // Internal: Returns an array of substates on the receiver state.
-  function substates() {
-    var a = [], n;
-    for (n in this.substates) { a.push(this.substates[n]); }
-    return a;
-  }
-
   // Internal: Calculates and caches the path from the root state to the
   // receiver state. Subsequent calls will return the cached path array.
   //
@@ -107,13 +99,15 @@
 
   // Internal: Returns an array of all current leaf states.
   function _current() {
-    var states = substates.call(this), a = [], i, n;
+    var a = [], i, n;
 
     if (!this.__isCurrent__) { return []; }
-    if (states.length === 0) { return [this]; }
+    if (this.substates.length === 0) { return [this]; }
 
-    for (i = 0, n = states.length; i < n; i++) {
-      if (states[i].__isCurrent__) { a = a.concat(_current.call(states[i])); }
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      if (this.substates[i].__isCurrent__) {
+        a = a.concat(_current.call(this.substates[i]));
+      }
     }
 
     return a;
@@ -152,7 +146,7 @@
       next = this.superstate;
       break;
     default:
-      next = this.substates[head];
+      next = this.substateMap[head];
     }
 
     if (!next) {
@@ -233,12 +227,11 @@
   function enterClustered(states, opts) {
     var root    = this.root(),
         selflen = _path.call(this).length,
-        sstates = substates.call(this),
         nexts   = [],
         paths, cur, next, i, n;
 
-    for (i = 0, n = sstates.length; i < n; i++) {
-      if (sstates[i].__isCurrent__) { cur = sstates[i]; break; }
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
     }
 
     for (i = 0, n = states.length; i < n; i++) {
@@ -249,7 +242,7 @@
       throw new Error("State#enterClustered: attempted to enter multiple substates of " + this + ": " + nexts.join(', '));
     }
 
-    if (!(next = nexts[0]) && sstates.length > 0) {
+    if (!(next = nexts[0]) && this.substates.length > 0) {
       if (this.__condition__) {
         paths  = flatten([this.__condition__.call(this, opts.context)]);
         states = [];
@@ -259,10 +252,10 @@
         return enterClustered.call(this, states, opts);
       }
       else if (this.hasHistory) {
-        next = this.__previous__ || sstates[0];
+        next = this.__previous__ || this.substates[0];
       }
       else {
-        next = sstates[0];
+        next = this.substates[0];
       }
     }
 
@@ -302,9 +295,8 @@
       if (typeof this.enter === 'function') { this.enter(opts.context); }
     }
 
-    for (name in this.substates) {
-      if (!this.substates.hasOwnProperty(name)) { continue; }
-      sstate  = this.substates[name];
+    for (name in this.substateMap) {
+      sstate  = this.substateMap[name];
       dstates = [];
       for (i = 0, n = states.length; i < n; i++) {
         if (findPivot.call(sstate, states[i]) === sstate) {
@@ -338,10 +330,10 @@
   //
   // Returns the receiver.
   function exitClustered(opts) {
-    var root = this.root(), sstates = substates.call(this), cur, i, n;
+    var root = this.root(), cur, i, n;
 
-    for (i = 0, n = sstates.length; i < n; i++) {
-      if (sstates[i].__isCurrent__) { cur = sstates[i]; break; }
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
     }
 
     if (this.hasHistory) { this.__previous__ = cur; }
@@ -368,10 +360,7 @@
   function exitConcurrent(opts) {
     var root = this.root(), name;
 
-    for (name in this.substates) {
-      if (!this.substates.hasOwnProperty(name)) { continue; }
-      exit.call(this.substates[name], opts);
-    }
+    for (name in this.substateMap) { exit.call(this.substateMap[name], opts); }
 
     if (typeof this.exit === 'function') { this.exit(opts.context); }
     this.__isCurrent__ = false;
@@ -402,10 +391,9 @@
   function sendClustered() {
     var handled = false, name, cur;
 
-    for (name in this.substates) {
-      if (!this.substates.hasOwnProperty(name)) { continue; }
-      if (this.substates[name].__isCurrent__) {
-        cur = this.substates[name];
+    for (name in this.substateMap) {
+      if (this.substateMap[name].__isCurrent__) {
+        cur = this.substateMap[name];
         break;
       }
     }
@@ -422,9 +410,8 @@
   function sendConcurrent() {
     var args = slice.call(arguments), handled = true, state, name;
 
-    for (name in this.substates) {
-      if (!this.substates.hasOwnProperty(name)) { continue; }
-      state   = this.substates[name];
+    for (name in this.substateMap) {
+      state   = this.substateMap[name];
       handled = state.send.apply(state, args) && handled;
     }
 
@@ -452,7 +439,8 @@
     }
 
     this.name          = name;
-    this.substates     = {};
+    this.substateMap   = {};
+    this.substates     = [];
     this.superstate    = null;
     this.isConcurrent  = !!opts.isConcurrent;
     this.hasHistory    = !!opts.hasHistory;
@@ -618,9 +606,8 @@
 
       f(this);
 
-      for (name in this.substates) {
-        if (!this.substates.hasOwnProperty(name)) { continue; }
-        this.substates[name].each(f);
+      for (name in this.substateMap) {
+        this.substateMap[name].each(f);
       }
 
       return this;
@@ -630,7 +617,8 @@
     //
     // Returns the receiver.
     addSubstate: function(state) {
-      this.substates[state.name] = state;
+      this.substateMap[state.name] = state;
+      this.substates.push(state);
       state.each(function(s) { s.__cache__ = {}; });
       state.superstate = this;
       return this;
