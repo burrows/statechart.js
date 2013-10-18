@@ -75,6 +75,20 @@
     return result;
   }
 
+  function multipleUniqs(array) {
+    var x, i, n;
+
+    if (!array || array.length === 0) { return false; }
+
+    x = array[0];
+
+    for (i = 1, n = array.length; i < n; i++) {
+      if (array[i] !== x) { return true; }
+    }
+
+    return false;
+  }
+
   // Internal: Returns an array of substates on the receiver state.
   function substates() {
     var a = [], n;
@@ -231,10 +245,9 @@
       nexts.push(_path.call(states[i])[selflen]);
     }
 
-    // FIXME: write a uniq helper
-    //if (nexts.uniq().size() > 1) {
-    //  throw new Error(Z.fmt("Z.State.enterClustered: attempted to enter multiple substates of %@: %@", this, nexts.pluck('name').join(', ')));
-    //}
+    if (multipleUniqs(nexts)) {
+      throw new Error("State#enterClustered: attempted to enter multiple substates of " + this + ": " + nexts.join(', '));
+    }
 
     if (!(next = nexts[0]) && sstates.length > 0) {
       if (this.__condition__) {
@@ -715,10 +728,9 @@
         pivots.push(findPivot.call(this, states[i]));
       }
 
-      //FIXME: write a uniq helper
-      //if (pivots.uniq().size() > 1) {
-      //  throw new Error(Z.fmt("Z.State.goto: multiple pivot states found between state %@ and paths %@", this, paths.join(', ')));
-      //}
+      if (multipleUniqs(pivots)) {
+        throw new Error("State#goto: multiple pivot states found between state " + this + " and paths " + paths.join(', '));
+      }
 
       pivot = pivots[0] || this;
 

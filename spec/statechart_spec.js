@@ -282,7 +282,7 @@ describe('State#goto', function() {
   it('should throw an exception when given paths to multiple clustered states', function() {
     expect(function() {
       c.goto('/a/e/f', '/a/e/g');
-    }).toThrow("State#enter: attempted to enter multiple substates of " + e.toString() + ": f, g", e);
+    }).toThrow("State#enterClustered: attempted to enter multiple substates of " + e + ": " + [f, g].join(', ') );
   });
 
   it('should handle directory-like relative paths', function() {
