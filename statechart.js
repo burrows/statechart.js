@@ -284,7 +284,7 @@
   //
   // Returns the receiver.
   function enterConcurrent(states, opts) {
-    var root = this.root(), sstate, dstates, name, i, n;
+    var root = this.root(), sstate, dstates, i, j, ni, nj;
 
     if (!this.__isCurrent__ || opts.force) {
       if (root.trace && this !== root) {
@@ -295,13 +295,15 @@
       if (typeof this.enter === 'function') { this.enter(opts.context); }
     }
 
-    for (name in this.substateMap) {
-      sstate  = this.substateMap[name];
+    for (i = 0, ni = this.substates.length; i < ni; i++) {
+      sstate  = this.substates[i];
       dstates = [];
-      for (i = 0, n = states.length; i < n; i++) {
-        if (findPivot.call(sstate, states[i]) === sstate) {
-          dstates.push(states[i]);
+
+      for (j = 0, nj = states.length; j < nj; j++) {
+        if (findPivot.call(sstate, states[j]) === sstate) {
+          dstates.push(states[j]);
         }
+
       }
       enter.call(sstate, dstates, opts);
     }
@@ -358,9 +360,11 @@
   //
   // Returnst he receiver.
   function exitConcurrent(opts) {
-    var root = this.root(), name;
+    var root = this.root(), i, n;
 
-    for (name in this.substateMap) { exit.call(this.substateMap[name], opts); }
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      exit.call(this.substates[i], opts);
+    }
 
     if (typeof this.exit === 'function') { this.exit(opts.context); }
     this.__isCurrent__ = false;
@@ -389,13 +393,10 @@
   // Returns a boolean indicating whether or not the action was handled by the
   //   current substate.
   function sendClustered() {
-    var handled = false, name, cur;
+    var handled = false, i, n, cur;
 
-    for (name in this.substateMap) {
-      if (this.substateMap[name].__isCurrent__) {
-        cur = this.substateMap[name];
-        break;
-      }
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
     }
 
     if (cur) { handled = !!cur.send.apply(cur, slice.call(arguments)); }
@@ -408,10 +409,10 @@
   // Returns a boolean indicating whether or not the action was handled by all
   //   substates.
   function sendConcurrent() {
-    var args = slice.call(arguments), handled = true, state, name;
+    var args = slice.call(arguments), handled = true, state, i, n;
 
-    for (name in this.substateMap) {
-      state   = this.substateMap[name];
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      state   = this.substates[i];
       handled = state.send.apply(state, args) && handled;
     }
 
@@ -585,9 +586,9 @@
     // Public: An observable property containing an array of the paths to all
     // current leaf states.
     current: function() {
-      var states = _current.call(this), paths = [], i, len;
+      var states = _current.call(this), paths = [], i, n;
 
-      for (i = 0, len = states.length; i < len; i++) {
+      for (i = 0, n = states.length; i < n; i++) {
         paths.push(states[i].path());
       }
 
@@ -602,12 +603,12 @@
     //
     // Returns the receiver.
     each: function(f) {
-      var name;
+      var i, n;
 
       f(this);
 
-      for (name in this.substateMap) {
-        this.substateMap[name].each(f);
+      for (i = 0, n = this.substates.length; i < n; i++) {
+        this.substates[i].each(f);
       }
 
       return this;
