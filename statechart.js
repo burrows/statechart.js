@@ -1,5 +1,5 @@
-// The `Z.State` type provides an implementation of a
-// [Harel Statechart](http://en.wikipedia.org/wiki/State_diagram#Harel_statechart).
+// The `statechart` module provides a `State` object that is an implementation
+// of a [Harel Statechart](http://en.wikipedia.org/wiki/State_diagram#Harel_statechart).
 //
 // Statecharts are an improvement over state machines because they elegantly
 // solve the state explosion problem that is common with state machines. They do
@@ -19,25 +19,25 @@
 //
 // Examples
 //
-//   var door = Z.State.define(function() {
+//   var door = State.define(function() {
 //     this.state('closed', function() {
 //       this.state('locked', function() {
-//         this.def('unlockDoor', function() { this.goto('../unlocked'); });
+//         this.unlockDoor = function() { this.goto('../unlocked'); };
 //       });
-//
+//   
 //       this.state('unlocked', function() {
-//         this.def('lockDoor', function() { this.goto('../locked'); });
-//         this.def('openDoor', function() { this.goto('/opened'); });
+//         this.lockDoor = function() { this.goto('../locked'); };
+//         this.openDoor = function() { this.goto('/opened'); };
 //       });
-//
-//       this.def('knock', function() { console.log('*knock knock*'); });
+//   
+//       this.knock = function() { console.log('*knock knock*'); };
 //     });
-//
+//   
 //     this.state('opened', function() {
-//       this.def('closeDoor', function() { this.goto('/closed/unlocked'); });
+//       this.closeDoor = function() { this.goto('/closed/unlocked'); };
 //     });
 //   });
-//
+//   
 //   door.goto();
 //   door.current();          // => [ '/closed/locked' ]
 //   door.send('knock');      // *knock knock*
@@ -53,12 +53,16 @@
 //   door.current();          // => [ '/closed/locked' ]
 (function(exports) {
   "use strict";
+
   var slice = Array.prototype.slice;
 
+  // Internal: Returns a boolean indicating whether the given object is an
+  // Array.
   function isArray(o) {
     return Object.prototype.toString.call(o) === '[object Array]';
   }
 
+  // Internal: Flattens the given array by removing all nesting.
   function flatten(array) {
     var result = [], i, n;
 
@@ -74,6 +78,8 @@
     return result;
   }
 
+  // Internal: Returns a boolean indicating whether there are multiple unique
+  // values in the given array.
   function multipleUniqs(array) {
     var x, i, n;
 
@@ -125,7 +131,7 @@
   //             in the case where the path cannot be resolved.
   // origState - The state where path resolution was originally attempted from.
   //
-  // Returns the `Z.State` object the path represents.
+  // Returns the `State` object the path represents.
   // Throws `Error` if the path cannot be resolved.
   function resolve(path, origPath, origState) {
     var head, next;
@@ -160,7 +166,7 @@
   // Internal: Finds the pivot state between the receiver and the given state.
   // The pivot state is the first common ancestor between the two states.
   //
-  // Returns a `Z.State` object.
+  // Returns a `State` object.
   // Throws `Error` if the two states do not belong to the same statechart.
   function findPivot(other) {
     var p1 = _path.call(this), p2 = _path.call(other), i, len, p;
@@ -314,7 +320,7 @@
   // Internal: Enters the receiver state. The actual entering logic is in the
   // `enterClustered` and `enterConcurrent` methods.
   //
-  // states - An of destination states.
+  // states - An array of destination states.
   // opts   - The options passed to `goto`.
   //
   // Returns the receiver.
@@ -352,13 +358,13 @@
     return this;
   }
 
-  // Internal: Exits a concurrent state. Similiar to `exitConcurrent` we
+  // Internal: Exits a concurrent state. Similiar to `exitClustered` we
   // recursively exit each substate and invoke the `exit` method as the stack
   // unwinds.
   //
   // opts - The options passed to `goto`.
   //
-  // Returnst he receiver.
+  // Returns the receiver.
   function exitConcurrent(opts) {
     var root = this.root(), i, n;
 
@@ -379,7 +385,7 @@
   // Internal: Exits the receiver state. The actual exiting logic is in the
   // `exitClustered` and `exitConcurrent` methods.
   //
-  // states - A `Z.Array` of destination states.
+  // states - An array of destination states.
   // opts   - The options passed to `goto`.
   //
   // Returns the receiver.
@@ -419,7 +425,7 @@
     return handled;
   }
 
-  // Public: The `Z.State` constructor.
+  // Public: The `State` constructor.
   //
   // name - A string containing the name of the state.
   // opts - An object containing zero or more of the following keys (default:
@@ -490,28 +496,27 @@
 
   State.prototype = {
     // Public: Creates a substate with the given name and adds it as a substate to
-    // the receiver state. If a `Z.State` object is given, then it simply adds the
+    // the receiver state. If a `State` object is given, then it simply adds the
     // state as a substate. This allows you to split up the definition of your
     // states instead of defining everything in one place.
     //
-    // name - A string containing the name of the state or a `Z.State` object.
-    // opts - An object of options to pass to the `Z.State` constructor
+    // name - A string containing the name of the state or a `State` object.
+    // opts - An object of options to pass to the `State` constructor
     //        (default: `null`).
     // f    - A function to invoke in the context of the newly created state
     //        (default: `null`).
     //
     // Examples
     //
-    //   var s2 = Z.State.create('s2').open(function() {
-    //     this.state('s21);
-    //     this.state('s22);
-    //   });
+    //   var s2 = new State('s2');
+    //   s2.state('s21');
+    //   s2.state('s22');
     //
-    //   var sc = Z.State.define(function() {
+    //   var sc = State.define(function() {
     //     this.state('s', function() {
     //       this.state('s1', function() {
-    //         this.state('s11);
-    //         this.state('s12);
+    //         this.state('s11');
+    //         this.state('s12');
     //       });
     //
     //       this.state(s2);
@@ -557,7 +562,7 @@
     //
     // Examples
     //
-    //   var sc = Z.State.define(function() {
+    //   var sc = State.define(function() {
     //     this.state('a', function() {
     //       this.C(function() {
     //         if (shouldGoToB) { return './b'; }
@@ -583,8 +588,7 @@
       this.__condition__ = f;
     },
 
-    // Public: An observable property containing an array of the paths to all
-    // current leaf states.
+    // Public: Returns an array of paths to all current leaf states.
     current: function() {
       var states = _current.call(this), paths = [], i, n;
 
@@ -636,10 +640,10 @@
     //
     // Examples
     //
-    //   var r = Z.State.create('root'),
-    //       a = Z.State.create('a'),
-    //       b = Z.State.create('b'),
-    //       c = Z.State.create('c');
+    //   var r = new State('root'),
+    //       a = new State('a'),
+    //       b = new State('b'),
+    //       c = new State('c');
     //
     //   r.addSubstate(a);
     //   a.addSubstate(b);
@@ -674,17 +678,13 @@
     //
     // Examples
     //
-    //   var sc = Z.State.define(function() {
+    //   var sc = State.define(function() {
     //     this.state('a', function() {
     //       this.state('b', function() {
-    //         this.def('foo', function() {
-    //           this.goto('../c');
-    //         });
+    //         this.foo = function() { this.goto('../c'); };
     //       });
     //       this.state('c', function() {
-    //         this.def('bar', function() {
-    //           this.goto('../b');
-    //         });
+    //         this.bar = function() { this.goto('../b'); };
     //       });
     //     });
     //   });
@@ -798,6 +798,7 @@
     // Throws `Error` if the state can not be resolved.
     resolve: function(path) { return resolve.call(this, path); },
 
+    // Public: Returns a formatted string with the state's full path.
     toString: function() { return 'State(' + this.path() + ')'; }
   };
 
