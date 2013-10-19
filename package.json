@@ -1,5 +1,6 @@
 {
   "name": "statechart",
+  "main": "./statechart.js",
   "version": "0.0.1",
   "devDependencies": {
     "jshint": "~1.1",
