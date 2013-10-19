@@ -21,38 +21,40 @@ More information on statecharts is available here:
 
 # Example
 
-    var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
-    
-    var door = State.define(function() {
-      this.state('closed', function() {
-        this.state('locked', function() {
-          this.unlockDoor = function() { this.goto('../unlocked'); };
-        });
-  
-        this.state('unlocked', function() {
-          this.lockDoor = function() { this.goto('../locked'); };
-          this.openDoor = function() { this.goto('/opened'); };
-        });
-  
-        this.knock = function() { console.log('*knock knock*'); };
-      });
-  
-      this.state('opened', function() {
-        this.closeDoor = function() { this.goto('/closed/unlocked'); };
-      });
+```javascript
+var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
+
+var door = State.define(function() {
+  this.state('closed', function() {
+    this.state('locked', function() {
+      this.unlockDoor = function() { this.goto('../unlocked'); };
     });
-  
-    door.goto();
-    door.current();          // => [ '/closed/locked' ]
-    door.send('knock');      // *knock knock*
-    door.current();          // => [ '/closed/locked' ]
-    door.send('unlockDoor');
-    door.current();          // => [ '/closed/unlocked' ]
-    door.send('knock');      // *knock knock*
-    door.send('openDoor');
-    door.current();          // => [ '/opened' ]
-    door.send('closeDoor');
-    door.current();          // => [ '/closed/unlocked' ]
-    door.send('lockDoor');
-    door.current();          // => [ '/closed/locked' ]
+
+    this.state('unlocked', function() {
+      this.lockDoor = function() { this.goto('../locked'); };
+      this.openDoor = function() { this.goto('/opened'); };
+    });
+
+    this.knock = function() { console.log('*knock knock*'); };
+  });
+
+  this.state('opened', function() {
+    this.closeDoor = function() { this.goto('/closed/unlocked'); };
+  });
+});
+
+door.goto();
+door.current();          // => [ '/closed/locked' ]
+door.send('knock');      // *knock knock*
+door.current();          // => [ '/closed/locked' ]
+door.send('unlockDoor');
+door.current();          // => [ '/closed/unlocked' ]
+door.send('knock');      // *knock knock*
+door.send('openDoor');
+door.current();          // => [ '/opened' ]
+door.send('closeDoor');
+door.current();          // => [ '/closed/unlocked' ]
+door.send('lockDoor');
+door.current();          // => [ '/closed/locked' ]
+```
 
