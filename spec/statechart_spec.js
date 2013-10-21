@@ -238,8 +238,8 @@ describe('State#goto', function() {
     states = [root, a, b, c, d, e, f, g, h, i, j, k, l, m];
 
     for (ii = 0, nn = states.length; ii < nn; ii++) {
-      states[ii].enter = function() { enters.push(this); };
-      states[ii].exit  = function() { exits.push(this); };
+      states[ii].enter(function() { enters.push(this); });
+      states[ii].exit(function() { exits.push(this); });
     }
   });
 
@@ -382,8 +382,8 @@ describe('State#goto', function() {
   it("should pass along its `context` option to each entered state's `enter` method", function() {
     var ectx, fctx;
 
-    e.enter = function(ctx) { ectx = ctx; };
-    f.enter = function(ctx) { fctx = ctx; };
+    e.enter(function(ctx) { ectx = ctx; });
+    f.enter(function(ctx) { fctx = ctx; });
 
     c.goto('/a/e/f', {context: 'foo'});
 
@@ -391,16 +391,37 @@ describe('State#goto', function() {
     expect(fctx).toEqual('foo');
   });
 
+  it('should invoke all enter handlers registered on the state', function() {
+    var calls = [];
+
+    e.enter(function() { calls.push('enter1'); });
+    e.enter(function() { calls.push('enter2'); });
+    e.enter(function() { calls.push('enter3'); });
+
+    c.goto('/a/e/f', {context: 'foo'});
+    expect(calls).toEqual(['enter1', 'enter2', 'enter3']);
+  });
+
   it("should pass along its `context` option to each exited state's `exit` method", function() {
     var bctx, cctx;
 
-    b.exit = function(ctx) { bctx = ctx; };
-    c.exit = function(ctx) { cctx = ctx; };
+    b.exit(function(ctx) { bctx = ctx; });
+    c.exit(function(ctx) { cctx = ctx; });
 
     c.goto('/a/e/f', {context: 'bar'});
 
     expect(bctx).toEqual('bar');
     expect(cctx).toEqual('bar');
+  });
+
+  it('should invoke all exit handlers registered on the state', function() {
+    var calls = [];
+
+    b.exit(function() { calls.push('exit1'); });
+    b.exit(function() { calls.push('exit2'); });
+
+    c.goto('/a/e/f', {context: 'foo'});
+    expect(calls).toEqual(['exit1', 'exit2']);
   });
 
   it('should invoke `enter` methods on states that are already current when the `force` option is given', function() {
@@ -567,13 +588,13 @@ describe('State#send', function() {
     d.addSubstate(e);
     d.addSubstate(f);
 
-    root.someAction = function() { calls.push(this); };
-    a.someAction = function() { calls.push(this); };
-    b.someAction = function() { calls.push(this); };
-    c.someAction = function() { calls.push(this); };
-    d.someAction = function() { calls.push(this); };
-    e.someAction = function() { calls.push(this); };
-    f.someAction = function() { calls.push(this); };
+    root.action('someAction', function() { calls.push(this); });
+    a.action('someAction', function() { calls.push(this); });
+    b.action('someAction', function() { calls.push(this); });
+    c.action('someAction', function() { calls.push(this); });
+    d.action('someAction', function() { calls.push(this); });
+    e.action('someAction', function() { calls.push(this); });
+    f.action('someAction', function() { calls.push(this); });
 
     root.goto();
     expect(root.current()).toEqual(['/a/b', '/d/e']);
@@ -591,7 +612,7 @@ describe('State#send', function() {
   it('should pass additional arguments to the action handler', function() {
     var bArgs;
 
-    b.someAction = function() { bArgs = slice.call(arguments); };
+    b.action('someAction', function() { bArgs = slice.call(arguments); });
 
     root.send('someAction', 1, 2, 'foo');
     expect(bArgs).toEqual([1, 2, 'foo']);
@@ -612,22 +633,22 @@ describe('State#send', function() {
     a.addSubstate(b);
     r.goto();
 
-    r.someAction = function() { calls.push(this); };
-    a.someAction = function() { calls.push(this); return 1; };
-    b.someAction = function() { calls.push(this); };
+    r.action('someAction', function() { calls.push(this); });
+    a.action('someAction', function() { calls.push(this); return 1; });
+    b.action('someAction', function() { calls.push(this); });
 
     r.send('someAction');
     expect(calls).toEqual([b, a]);
 
     calls = [];
-    b.someAction = function() { calls.push(this); return true; };
+    b.action('someAction', function() { calls.push(this); return true; });
 
     r.send('someAction');
     expect(calls).toEqual([b]);
   });
 
   it('should stop bubbling when all handlers on a concurrent state return a truthy value', function() {
-    a.someAction = function() { calls.push(this); return 1; };
+    a.action('someAction', function() { calls.push(this); return 1; });
 
     root.send('someAction');
     expect(calls).toEqual([b, a, e, d, root]);
@@ -635,7 +656,7 @@ describe('State#send', function() {
     root.goto();
     calls = [];
 
-    d.someAction = function() { calls.push(this); return 1; };
+    d.action('someAction', function() { calls.push(this); return 1; });
 
     root.send('someAction');
     expect(calls).toEqual([b, a, e, d]);
@@ -644,8 +665,8 @@ describe('State#send', function() {
   it('should not perform transitions made in an action handler until all current states have received the action', function() {
     var eCurrent;
 
-    b.someAction = function() { this.goto('/a/c'); };
-    e.someAction = function() { eCurrent = root.current(); };
+    b.action('someAction', function() { this.goto('/a/c'); });
+    e.action('someAction', function() { eCurrent = root.current(); });
 
     root.send('someAction');
 

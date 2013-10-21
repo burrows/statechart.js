@@ -113,6 +113,22 @@
     this.__transitions__ = [];
   }
 
+  // Internal: Invokes all registered enter handlers.
+  function callEnterHandlers(context) {
+    var i, n;
+    for (i = 0, n = this.enters.length; i < n; i++) {
+      this.enters[i].call(this, context);
+    }
+  }
+
+  // Internal: Invokes all registered exit handlers.
+  function callExitHandlers(context) {
+    var i, n;
+    for (i = 0, n = this.exits.length; i < n; i++) {
+      this.exits[i].call(this, context);
+    }
+  }
+
   // Internal: Enters a clustered state. Entering a clustered state involves
   // exiting the current substate (if one exists and is not a destination
   // state), invoking the `enter` method on the receiver state, and recursively
@@ -172,7 +188,7 @@
     if (!this.__isCurrent__ || opts.force) {
       trace.call(this, "State: [ENTER]  : " + this.path() + (this.__isCurrent__ ? ' (forced)' : ''));
       this.__isCurrent__ = true;
-      if (typeof this.enter === 'function') { this.enter(opts.context); }
+      callEnterHandlers.call(this, opts.context);
     }
 
     if (next) { enter.call(next, states, opts); }
@@ -194,7 +210,7 @@
     if (!this.__isCurrent__ || opts.force) {
       trace.call(this, "State: [ENTER]  : " + this.path() + (this.__isCurrent__ ? ' (forced)' : ''));
       this.__isCurrent__ = true;
-      if (typeof this.enter === 'function') { this.enter(opts.context); }
+      callEnterHandlers.call(this, opts.context);
     }
 
     for (i = 0, ni = this.substates.length; i < ni; i++) {
@@ -244,7 +260,7 @@
 
     if (cur) { exit.call(cur, opts); }
 
-    if (typeof this.exit === 'function') { this.exit(opts.context); }
+    callExitHandlers.call(this, opts.context);
     this.__isCurrent__ = false;
     trace.call(this, "State: [EXIT]   : " + this.path());
 
@@ -265,7 +281,7 @@
       exit.call(this.substates[i], opts);
     }
 
-    if (typeof this.exit === 'function') { this.exit(opts.context); }
+    callExitHandlers.call(this, opts.context);
     this.__isCurrent__ = false;
     if (this !== root) { trace.call(this, "State: [EXIT]   : " + this.path()); }
 
@@ -349,6 +365,9 @@
     this.substateMap   = {};
     this.substates     = [];
     this.superstate    = null;
+    this.enters        = [];
+    this.exits         = [];
+    this.actions       = {};
     this.isConcurrent  = !!opts.isConcurrent;
     this.hasHistory    = !!opts.hasHistory;
     this.__isCurrent__ = false;
@@ -452,6 +471,41 @@
 
       return s;
     },
+
+    // Public: Registers an enter handler to be called with the receiver state
+    // is entered. The `context` option passed to `goto` will be passed to the
+    // given function when invoked.
+    //
+    // Multiple enter handlers may be registered per state. They are invoked in
+    // the order in which they are defined.
+    //
+    // f - A function to call when the state is entered.
+    //
+    // Returns the receiver.
+    enter: function(f) { this.enters.push(f); return this; },
+
+    // Public: Registers an exit handler to be called with the receiver state
+    // is exited. The `context` option passed to `goto` will be passed to the
+    // given function when invoked.
+    //
+    // Multiple exit handlers may be registered per state. They are invoked in
+    // the order in which they are defined.
+    //
+    // f - A function to call when the state is exited.
+    //
+    // Returns the receiver.
+    exit: function(f) { this.exits.push(f); return this; },
+
+    // Public: Registers an action handler to be called when an action with a
+    // matching name is sent to the state via the `send` method.
+    //
+    // Only one action handler may be registered per action.
+    //
+    // name - The name of the action.
+    // f    - A function to call when the action is sent.
+    //
+    // Returns the receiver.
+    action: function(name, f) { this.actions[name] = f; return this; },
 
     // Public: Defines a condition state on the receiver state. Condition states
     // are consulted when entering a clustered state without specified destination
@@ -656,7 +710,7 @@
     // Returns a boolean indicating whether or not the action was handled.
     // Throws `Error` if the state is not current.
     send: function() {
-      var args = slice.call(arguments), handled;
+      var args = slice.call(arguments), actions = this.actions, handled;
 
       if (!this.__isCurrent__) {
         throw new Error('State#send: attempted to send an action to a state that is not current: ' + this);
@@ -669,9 +723,9 @@
       handled = this.isConcurrent ? sendConcurrent.apply(this, arguments) :
         sendClustered.apply(this, arguments);
 
-      if (!handled && typeof this[args[0]] === 'function') {
+      if (!handled && typeof actions[args[0]] === 'function') {
         this.__isSending__ = true;
-        handled = !!this[args[0]].apply(this, args.slice(1));
+        handled = !!actions[args[0]].apply(this, args.slice(1));
         this.__isSending__ = false;
       }
 

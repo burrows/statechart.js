@@ -27,19 +27,19 @@ var State = (typeof require === 'function' ? require('statechart') : window.stat
 var door = State.define(function() {
   this.state('closed', function() {
     this.state('locked', function() {
-      this.unlockDoor = function() { this.goto('../unlocked'); };
+      this.action('unlockDoor', function() { this.goto('../unlocked'); });
     });
 
     this.state('unlocked', function() {
-      this.lockDoor = function() { this.goto('../locked'); };
-      this.openDoor = function() { this.goto('/opened'); };
+      this.action('lockDoor', function() { this.goto('../locked'); });
+      this.action('openDoor', function() { this.goto('/opened'); });
     });
 
-    this.knock = function() { console.log('*knock knock*'); };
+    this.action('knock', function() { console.log('*knock knock*'); });
   });
 
   this.state('opened', function() {
-    this.closeDoor = function() { this.goto('/closed/unlocked'); };
+    this.action('closeDoor', function() { this.goto('/closed/unlocked'); });
   });
 });
 
