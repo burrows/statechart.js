@@ -152,7 +152,7 @@
   function enterClustered(states, opts) {
     var selflen = _path.call(this).length,
         nexts   = [],
-        paths, cur, next, i, n;
+        state, paths, cur, next, i, n;
 
     for (i = 0, n = this.substates.length; i < n; i++) {
       if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
@@ -171,7 +171,10 @@
         paths  = flatten([this.__condition__.call(this, opts.context)]);
         states = [];
         for (i = 0, n = paths.length; i < n; i++) {
-          states.push(this.resolve(paths[i]));
+          if (!(state = this.resolve(paths[i]))) {
+            throw new Error("State#enterClustered: could not resolve path '" + paths[i] + "' returned by condition function from " + this);
+          }
+          states.push(state);
         }
         return enterClustered.call(this, states, opts);
       }
@@ -661,10 +664,14 @@
           opts   = typeof paths[paths.length - 1] === 'object' ? paths.pop() : {},
           states = [],
           pivots = [],
-          pivot, i, n;
+          state, pivot, i, n;
 
       for (i = 0, n = paths.length; i < n; i++) {
-        states.push(this.resolve(paths[i]));
+        if (!(state = this.resolve(paths[i]))) {
+          throw new Error('State#goto: could not resolve path ' + paths[i] + ' from ' + this);
+        }
+
+        states.push(state);
       }
 
       for (i = 0, n = states.length; i < n; i++) {
@@ -742,7 +749,10 @@
     //
     // Returns `true` or `false`.
     // Throws `Error` if the path cannot be resolved.
-    isCurrent: function(path) { return this.resolve(path).__isCurrent__; },
+    isCurrent: function(path) {
+      var state = this.resolve(path);
+      return !!(state && state.__isCurrent__);
+    },
 
     // Public: Resolves a string path into an actual `State` object. Paths not
     // starting with a '/' are resolved relative to the receiver state, paths that
@@ -756,8 +766,8 @@
     //             in the case where the path cannot be resolved.
     // origState - The state where path resolution was originally attempted from.
     //
-    // Returns the `State` object the path represents.
-    // Throws `Error` if the path cannot be resolved.
+    // Returns the `State` object the path represents if it can be resolve and
+    //   `null` otherwise.
     resolve: function(path, origPath, origState) {
       var head, next;
 
@@ -780,9 +790,7 @@
         next = this.substateMap[head];
       }
 
-      if (!next) {
-        throw new Error('State#resolve: could not resolve path ' + origPath + ' from ' + origState);
-      }
+      if (!next) { return null; }
 
       return path.length === 0 ? next : next.resolve(path, origPath, origState);
     },

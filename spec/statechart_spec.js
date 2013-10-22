@@ -287,7 +287,7 @@ describe('State#goto', function() {
   it('should throw an exception when given an invalid path', function() {
     expect(function() {
       c.goto('/a/b/x');
-    }).toThrow("State#resolve: could not resolve path /a/b/x from " + c.toString());
+    }).toThrow("State#goto: could not resolve path /a/b/x from " + c.toString());
   });
 
   it('should throw an exception when given paths to multiple clustered states', function() {
@@ -482,6 +482,14 @@ describe('condition states', function() {
     expect(function() {
       s.C(function() {});
     }).toThrow("State#C: a concurrent state may not have a condition state: " + s);
+  });
+
+  it("should throw an exception when the states returned by the condition function don't exist", function() {
+    a.C(function() { return './blah'; });
+
+    expect(function() {
+      root.goto('/a');
+    }).toThrow("State#enterClustered: could not resolve path './blah' returned by condition function from " + a);
   });
 
   it('should cause goto to enter the the state returned by the condition function', function() {
@@ -715,6 +723,10 @@ describe('State#isCurrent', function() {
     expect(z.isCurrent('/x/y')).toBe(true);
     expect(z.isCurrent('/x/z')).toBe(false);
   });
+
+  it('should return false if the state does not exist', function() {
+    expect((new State('')).isCurrent('/x/y/z')).toBe(false);
+  });
 });
 
 describe('State#resolve', function() {
@@ -764,10 +776,8 @@ describe('State#resolve', function() {
     expect(s22.resolve('../../..')).toBe(root);
   });
 
-  it('should throw an exception when given an invalid path', function() {
-    expect(function() {
-      root.resolve('/a/b/x');
-    }).toThrow("State#resolve: could not resolve path /a/b/x from " + root);
+  it('should return null when given an invalid path', function() {
+    expect(root.resolve('/a/b/x')).toBeNull();
   });
 });
 
