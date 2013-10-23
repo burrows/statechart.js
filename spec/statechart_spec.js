@@ -3,9 +3,9 @@
 var slice = Array.prototype.slice,
     State = (typeof require === 'function' ? require('../statechart') : window.statechart).State;
 
-jasmine.pp = function(o) {
-  return Object.prototype.toString.call(o);
-}
+//jasmine.pp = function(o) {
+//  return Object.prototype.toString.call(o);
+//}
 
 describe('State constructor function', function() {
   it('should set the `name` property', function() {
@@ -23,29 +23,36 @@ describe('State constructor function', function() {
     expect(s.__isCurrent__).toBe(false);
   });
 
-  it('should default `isConcurrent` to `false`', function() {
+  it('should default `concurrent` to `false`', function() {
     var s = new State('a');
-    expect(s.isConcurrent).toBe(false);
+    expect(s.concurrent).toBe(false);
   });
 
-  it('should allow setting `isConcurrent` to `true`', function() {
-    var s = new State('a', {isConcurrent: true});
-    expect(s.isConcurrent).toBe(true);
+  it('should allow setting `concurrent` to `true`', function() {
+    var s = new State('a', {concurrent: true});
+    expect(s.concurrent).toBe(true);
   });
 
-  it('should default `hasHistory` to `false`', function() {
+  it('should default `history` to `false`', function() {
     var s = new State('a');
-    expect(s.hasHistory).toBe(false);
+    expect(s.history).toBe(false);
   });
 
-  it('should allow setting `hasHistory` to `true`', function() {
-    var s = new State('a', {hasHistory: true});
-    expect(s.hasHistory).toBe(true);
+  it('should allow setting `history` to `true` via the `H` option', function() {
+    var s = new State('a', {H: true});
+    expect(s.history).toBe(true);
+    expect(s.deep).toBe(false);
   });
 
-  it('should throw an exception if `isConcurrent` and `hasHistory` are set', function() {
+  it('should allow setting `history` and `deep` to `true` via setting the `H` option to "*"', function() {
+    var s = new State('a', {H: '*'});
+    expect(s.history).toBe(true);
+    expect(s.deep).toBe(true);
+  });
+
+  it('should throw an exception if `concurrent` and `H` are set', function() {
     expect(function() {
-      new State('a', {isConcurrent: true, hasHistory: true});
+      new State('a', {concurrent: true, H: true});
     }).toThrow('State: history states are not allowed on concurrent states');
   });
 
@@ -166,7 +173,7 @@ describe('State#current', function() {
 
   beforeEach(function() {
     root = new State('root');
-    s    = new State('s', {isConcurrent: true});
+    s    = new State('s', {concurrent: true});
     s1   = new State('s1');
     s2   = new State('s2');
     s11  = new State('s11');
@@ -206,12 +213,12 @@ describe('State#goto', function() {
 
     root = new State('root');
     a    = new State('a');
-    b    = new State('b', {hasHistory: true});
+    b    = new State('b', {H: true});
     c    = new State('c');
     d    = new State('d');
-    e    = new State('e');
+    e    = new State('e', {H: '*'});
     f    = new State('f');
-    g    = new State('g', {isConcurrent: true});
+    g    = new State('g', {concurrent: true});
     h    = new State('h');
     i    = new State('i');
     j    = new State('j');
@@ -379,6 +386,15 @@ describe('State#goto', function() {
     expect(root.current()).toEqual(['/a/b/d']);
   });
 
+  it('should enter the most recently exited leaf states when the path is not specified and the state has deep history tracking', function() {
+    root.goto('/a/e/g/h/j', '/a/e/g/k/m');
+    expect(root.current()).toEqual(['/a/e/g/h/j', '/a/e/g/k/m']);
+    root.goto('/a/b/c');
+    expect(root.current()).toEqual(['/a/b/c']);
+    root.goto('/a/e');
+    expect(root.current()).toEqual(['/a/e/g/h/j', '/a/e/g/k/m']);
+  });
+
   it("should pass along its `context` option to each entered state's `enter` method", function() {
     var ectx, fctx;
 
@@ -445,7 +461,7 @@ describe('condition states', function() {
     x    = new State('x');
     a    = new State('a');
     b    = new State('b');
-    c    = new State('c', {isConcurrent: true});
+    c    = new State('c', {concurrent: true});
     d    = new State('d');
     e    = new State('e');
     f    = new State('f');
@@ -469,7 +485,7 @@ describe('condition states', function() {
   });
 
   it('should throw an exception when a condition state is defined on a state with history', function() {
-    var s = new State('x', {hasHistory: true});
+    var s = new State('x', {H: true});
 
     expect(function() {
       s.C(function() {});
@@ -477,7 +493,7 @@ describe('condition states', function() {
   });
 
   it('should throw an exception when a condition state is defined on concurrent state', function() {
-    var s = new State('x', {isConcurrent: true});
+    var s = new State('x', {concurrent: true});
 
     expect(function() {
       s.C(function() {});
@@ -531,8 +547,8 @@ describe('State.define', function() {
   });
 
   it('should pass the options to the `State` constructor', function() {
-    var s = State.define({isConcurrent: true}, function() {});
-    expect(s.isConcurrent).toBe(true);
+    var s = State.define({concurrent: true}, function() {});
+    expect(s.concurrent).toBe(true);
   });
 
   it('should call the given function in the context of the newly created state', function() {
@@ -554,8 +570,8 @@ describe('State#state', function() {
   });
 
   it('should pass the options to the `Z.State` constructor', function() {
-    var x = root.state('x', {isConcurrent: true});
-    expect(x.isConcurrent).toBe(true);
+    var x = root.state('x', {concurrent: true});
+    expect(x.concurrent).toBe(true);
   });
 
   it('should call the given function in the context of the newly created state', function() {
@@ -581,7 +597,7 @@ describe('State#send', function() {
 
   beforeEach(function() {
     calls = [];
-    root  = new State('root', {isConcurrent: true});
+    root  = new State('root', {concurrent: true});
     a     = new State('a');
     b     = new State('b');
     c     = new State('c');

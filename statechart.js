@@ -139,7 +139,7 @@
   // 2. the result of invoking the condition function defined with the `C`
   //    method if it exists
   // 3. the most recently exited substate if the state was defined with the
-  //    `hasHistory` option and has been previously entered
+  //    `H` option and has been previously entered
   // 4. the first substate
   //
   // states - An array of destination states (may be empty to indicate that
@@ -178,7 +178,7 @@
         }
         return enterClustered.call(this, states, opts);
       }
-      else if (this.hasHistory) {
+      else if (this.history) {
         next = this.__previous__ || this.substates[0];
       }
       else {
@@ -240,7 +240,7 @@
   //
   // Returns the receiver.
   function enter(states, opts) {
-    return this.isConcurrent ?
+    return this.concurrent ?
       enterConcurrent.call(this, states, opts) :
       enterClustered.call(this, states, opts);
   }
@@ -259,7 +259,7 @@
       if (this.substates[i].__isCurrent__) { cur = this.substates[i]; break; }
     }
 
-    if (this.hasHistory) { this.__previous__ = cur; }
+    if (this.history) { this.__previous__ = cur; }
 
     if (cur) { exit.call(cur, opts); }
 
@@ -299,7 +299,7 @@
   //
   // Returns the receiver.
   function exit(opts) {
-    return this.isConcurrent ?
+    return this.concurrent ?
       exitConcurrent.call(this, opts) : exitClustered.call(this, opts);
   }
 
@@ -349,18 +349,19 @@
   // name - A string containing the name of the state.
   // opts - An object containing zero or more of the following keys (default:
   //        `null`).
-  //        isConcurrent - Makes the state's substates concurrent.
-  //        hasHistory   - Causes the state to keep track of its history state.
+  //        concurrent - Makes the state's substates concurrent.
+  //        H          - Causes the state to keep track of its history state.
+  //                     Set to `true` to track just the history of this state
+  //                     or `'*'` to track the history of all substates.
   //
   // Returns nothing.
-  // Throws `Error` if both the `isConcurrent` and `hasHistory` options are
-  //   specified.
+  // Throws `Error` if both the `concurrent` and `H` options are set.
   function State(name, opts) {
     if (!(this instanceof State)) { return new State(name, opts); }
 
     opts = opts || {};
 
-    if (opts.isConcurrent && opts.hasHistory) {
+    if (opts.concurrent && opts.H) {
       throw new Error('State: history states are not allowed on concurrent states');
     }
 
@@ -371,8 +372,9 @@
     this.enters        = [];
     this.exits         = [];
     this.actions       = {};
-    this.isConcurrent  = !!opts.isConcurrent;
-    this.hasHistory    = !!opts.hasHistory;
+    this.concurrent    = !!opts.concurrent;
+    this.history       = !!(opts.H);
+    this.deep          = opts.H === '*';
     this.__isCurrent__ = false;
     this.__cache__     = {};
     this.trace         = false;
@@ -388,7 +390,7 @@
   //
   // Examples
   //
-  //   var sc = State.define({isConcurrent: true}, function() {
+  //   var sc = State.define({concurrent: true}, function() {
   //     this.state('a');
   //     this.state('b');
   //     this.state('c');
@@ -534,11 +536,11 @@
     //
     // Returns nothing.
     C: function(f) {
-      if (this.hasHistory) {
+      if (this.history) {
         throw new Error('State#C: a state may not have both condition and history states: ' + this);
       }
 
-      if (this.isConcurrent) {
+      if (this.concurrent) {
         throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
       }
 
@@ -579,9 +581,13 @@
     //
     // Returns the receiver.
     addSubstate: function(state) {
+      var deep = this.history && this.deep;
       this.substateMap[state.name] = state;
       this.substates.push(state);
-      state.each(function(s) { s.__cache__ = {}; });
+      state.each(function(s) {
+        s.__cache__ = {};
+        if (deep) { s.history = s.deep = true; }
+      });
       state.superstate = this;
       return this;
     },
@@ -693,7 +699,7 @@
       // if the pivot state is a concurrent state and is not also the starting
       // state, then we're attempting to cross a concurrency boundary, which is
       // not allowed
-      if (pivot.isConcurrent && pivot !== this) {
+      if (pivot.concurrent && pivot !== this) {
         throw new Error('State#goto: one or more of the given paths are not reachable from state ' + this + ': ' +  paths.join(', '));
       }
 
@@ -727,7 +733,7 @@
         trace.call(this, 'State: [ACTION] : ' + args[0]);
       }
 
-      handled = this.isConcurrent ? sendConcurrent.apply(this, arguments) :
+      handled = this.concurrent ? sendConcurrent.apply(this, arguments) :
         sendClustered.apply(this, arguments);
 
       if (!handled && typeof actions[args[0]] === 'function') {
