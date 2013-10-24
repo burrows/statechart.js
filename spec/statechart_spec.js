@@ -459,6 +459,10 @@ describe('condition states', function() {
   beforeEach(function() {
     root = new State('root');
     x    = new State('x');
+    y    = new State('y');
+    z    = new State('z', {H: true});
+    z1   = new State('z1');
+    z2   = new State('z2');
     a    = new State('a');
     b    = new State('b');
     c    = new State('c', {concurrent: true});
@@ -471,25 +475,21 @@ describe('condition states', function() {
 
     root.addSubstate(x);
     root.addSubstate(a);
+    root.addSubstate(z);
     a.addSubstate(b);
     a.addSubstate(c);
+    a.addSubstate(y);
     c.addSubstate(d);
     c.addSubstate(e);
     d.addSubstate(f);
     d.addSubstate(g);
     e.addSubstate(h);
     e.addSubstate(i);
+    z.addSubstate(z1);
+    z.addSubstate(z2);
 
     root.goto();
     expect(root.current()).toEqual(['/x']);
-  });
-
-  it('should throw an exception when a condition state is defined on a state with history', function() {
-    var s = new State('x', {H: true});
-
-    expect(function() {
-      s.C(function() {});
-    }).toThrow("State#C: a state may not have both condition and history states: " + s);
   });
 
   it('should throw an exception when a condition state is defined on concurrent state', function() {
@@ -509,9 +509,25 @@ describe('condition states', function() {
   });
 
   it('should cause goto to enter the the state returned by the condition function', function() {
-    a.C(function() { return './b'; });
+    a.C(function() { return './y'; });
+    root.goto('/a');
+    expect(root.current()).toEqual(['/a/y']);
+  });
+
+  it('should cause goto to enter the first substate when null is returned by the condition function', function() {
+    a.C(function() { return null; });
     root.goto('/a');
     expect(root.current()).toEqual(['/a/b']);
+  });
+
+  it('should cause goto to use the history state when its defined and the condition function returns null', function() {
+    z.C(function() { return null; });
+    root.goto('/z/z2');
+    expect(root.current()).toEqual(['/z/z2']);
+    root.goto('/x');
+    expect(root.current()).toEqual(['/x']);
+    root.goto('/z');
+    expect(root.current()).toEqual(['/z/z2']);
   });
 
   it('should cause goto to enter the states returned by the condition function', function() {

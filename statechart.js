@@ -131,13 +131,13 @@
 
   // Internal: Enters a clustered state. Entering a clustered state involves
   // exiting the current substate (if one exists and is not a destination
-  // state), invoking the `enter` method on the receiver state, and recursively
-  // entering the new destination substate. The new destination substate is
-  // determined as follows:
+  // state), invoking the `enter` callbacks on the receiver state, and
+  // recursively entering the new destination substate. The new destination
+  // substate is determined as follows:
   //
   // 1. the substate indicated in the `states` argument if its not empty
   // 2. the result of invoking the condition function defined with the `C`
-  //    method if it exists
+  //    method if it exists and returns a substate path
   // 3. the most recently exited substate if the state was defined with the
   //    `H` option and has been previously entered
   // 4. the first substate
@@ -167,8 +167,8 @@
     }
 
     if (!(next = nexts[0]) && this.substates.length > 0) {
-      if (this.__condition__) {
-        paths  = flatten([this.__condition__.call(this, opts.context)]);
+      if (this.__condition__ && (paths = this.__condition__.call(this, opts.context))) {
+        paths  = flatten([paths]);
         states = [];
         for (i = 0, n = paths.length; i < n; i++) {
           if (!(state = this.resolve(paths[i]))) {
@@ -536,10 +536,6 @@
     //
     // Returns nothing.
     C: function(f) {
-      if (this.history) {
-        throw new Error('State#C: a state may not have both condition and history states: ' + this);
-      }
-
       if (this.concurrent) {
         throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
       }
