@@ -353,11 +353,20 @@
   //        H          - Causes the state to keep track of its history state.
   //                     Set to `true` to track just the history of this state
   //                     or `'*'` to track the history of all substates.
+  // f    - A function to invoke in the context of the newly created state
+  //        (default: `null`).
   //
   // Returns nothing.
   // Throws `Error` if both the `concurrent` and `H` options are set.
-  function State(name, opts) {
-    if (!(this instanceof State)) { return new State(name, opts); }
+  function State(name, opts, f) {
+    if (arguments.length === 2) {
+      if (typeof opts === 'function') {
+        f    = opts;
+        opts = {};
+      }
+    }
+
+    if (!(this instanceof State)) { return new State(name, opts, f); }
 
     opts = opts || {};
 
@@ -378,6 +387,8 @@
     this.__isCurrent__ = false;
     this.__cache__     = {};
     this.trace         = false;
+
+    if (f) { f.call(this); }
   }
 
   // Public: Convenience method for creating a new statechart. Simply creates a
@@ -449,31 +460,9 @@
     //
     // Returns the newly created state.
     state: function(name) {
-      var opts = {}, f = null, s;
-
-      if (arguments.length === 3) {
-        opts = arguments[1];
-        f    = arguments[2];
-      }
-      else if (arguments.length === 2) {
-        if (typeof arguments[1] === 'function') {
-          f = arguments[1];
-        }
-        else {
-          opts = arguments[1];
-        }
-      }
-
-      if (name instanceof State) {
-        s = name;
-        this.addSubstate(s);
-      }
-      else {
-        s = new State(name, opts);
-        this.addSubstate(s);
-        if (f) { f.call(s); }
-      }
-
+      var s = name instanceof State ? name :
+        State.apply(null, slice.call(arguments));
+      this.addSubstate(s);
       return s;
     },
 

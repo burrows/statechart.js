@@ -61,6 +61,18 @@ describe('State constructor function', function() {
       State('a');
     }).not.toThrow();
   });
+
+  it('should invoke the given function in the context of the new state when given as the second argument', function() {
+    var context = null, f = function() { context = this; }, s;
+    s = new State('x', f);
+    expect(context).toBe(s);
+  });
+
+  it('should invoke the given function in the context of the new state when given as the third argument', function() {
+    var context = null, f = function() { context = this; }, s;
+    s = new State('x', {H: true}, f);
+    expect(context).toBe(s);
+  });
 });
 
 describe('State#addSubstate', function() {
