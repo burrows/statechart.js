@@ -640,20 +640,20 @@ describe('State#send', function() {
     d.addSubstate(e);
     d.addSubstate(f);
 
-    root.action('someAction', function() { calls.push(this); });
-    a.action('someAction', function() { calls.push(this); });
-    b.action('someAction', function() { calls.push(this); });
-    c.action('someAction', function() { calls.push(this); });
-    d.action('someAction', function() { calls.push(this); });
-    e.action('someAction', function() { calls.push(this); });
-    f.action('someAction', function() { calls.push(this); });
+    root.event('someEvent', function() { calls.push(this); });
+    a.event('someEvent', function() { calls.push(this); });
+    b.event('someEvent', function() { calls.push(this); });
+    c.event('someEvent', function() { calls.push(this); });
+    d.event('someEvent', function() { calls.push(this); });
+    e.event('someEvent', function() { calls.push(this); });
+    f.event('someEvent', function() { calls.push(this); });
 
     root.goto();
     expect(root.current()).toEqual(['/a/b', '/d/e']);
   });
 
-  it('should send the action to all current states', function() {
-    root.send('someAction');
+  it('should send the event to all current states', function() {
+    root.send('someEvent');
     expect(calls[0]).toBe(b);
     expect(calls[1]).toBe(a);
     expect(calls[2]).toBe(e);
@@ -661,17 +661,17 @@ describe('State#send', function() {
     expect(calls[4]).toBe(root);
   });
 
-  it('should pass additional arguments to the action handler', function() {
+  it('should pass additional arguments to the event handler', function() {
     var bArgs;
 
-    b.action('someAction', function() { bArgs = slice.call(arguments); });
+    b.event('someEvent', function() { bArgs = slice.call(arguments); });
 
-    root.send('someAction', 1, 2, 'foo');
+    root.send('someEvent', 1, 2, 'foo');
     expect(bArgs).toEqual([1, 2, 'foo']);
   });
 
-  it("should bubble the action up each current state's superstate chain", function() {
-    root.send('someAction');
+  it("should bubble the event up each current state's superstate chain", function() {
+    root.send('someEvent');
     expect(calls).toEqual([b, a, e, d, root]);
   });
 
@@ -685,42 +685,42 @@ describe('State#send', function() {
     a.addSubstate(b);
     r.goto();
 
-    r.action('someAction', function() { calls.push(this); });
-    a.action('someAction', function() { calls.push(this); return 1; });
-    b.action('someAction', function() { calls.push(this); });
+    r.event('someEvent', function() { calls.push(this); });
+    a.event('someEvent', function() { calls.push(this); return 1; });
+    b.event('someEvent', function() { calls.push(this); });
 
-    r.send('someAction');
+    r.send('someEvent');
     expect(calls).toEqual([b, a]);
 
     calls = [];
-    b.action('someAction', function() { calls.push(this); return true; });
+    b.event('someEvent', function() { calls.push(this); return true; });
 
-    r.send('someAction');
+    r.send('someEvent');
     expect(calls).toEqual([b]);
   });
 
   it('should stop bubbling when all handlers on a concurrent state return a truthy value', function() {
-    a.action('someAction', function() { calls.push(this); return 1; });
+    a.event('someEvent', function() { calls.push(this); return 1; });
 
-    root.send('someAction');
+    root.send('someEvent');
     expect(calls).toEqual([b, a, e, d, root]);
 
     root.goto();
     calls = [];
 
-    d.action('someAction', function() { calls.push(this); return 1; });
+    d.event('someEvent', function() { calls.push(this); return 1; });
 
-    root.send('someAction');
+    root.send('someEvent');
     expect(calls).toEqual([b, a, e, d]);
   });
 
-  it('should not perform transitions made in an action handler until all current states have received the action', function() {
+  it('should not perform transitions made in an event handler until all current states have received the event', function() {
     var eCurrent;
 
-    b.action('someAction', function() { this.goto('/a/c'); });
-    e.action('someAction', function() { eCurrent = root.current(); });
+    b.event('someEvent', function() { this.goto('/a/c'); });
+    e.event('someEvent', function() { eCurrent = root.current(); });
 
-    root.send('someAction');
+    root.send('someEvent');
 
     expect(root.current()).toEqual(['/a/c', '/d/e']);
     expect(eCurrent).toEqual(['/a/b', '/d/e']);

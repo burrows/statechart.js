@@ -87,7 +87,7 @@
 
   // Internal: Queues up a transition for later processing. Transitions are
   // queued instead of happening immediately because we need to allow all
-  // current states to receive an action before any transitions actually occur.
+  // current states to receive an event before any transitions actually occur.
   //
   // pivot  - The pivot state between the start state and destination states.
   // states - An array of destination states.
@@ -303,9 +303,9 @@
       exitConcurrent.call(this, opts) : exitClustered.call(this, opts);
   }
 
-  // Internal: Sends an action to a clustered state.
+  // Internal: Sends an event to a clustered state.
   //
-  // Returns a boolean indicating whether or not the action was handled by the
+  // Returns a boolean indicating whether or not the event was handled by the
   //   current substate.
   function sendClustered() {
     var handled = false, i, n, cur;
@@ -319,9 +319,9 @@
     return handled;
   }
 
-  // Internal: Sends an action to a concurrent state.
+  // Internal: Sends an event to a concurrent state.
   //
-  // Returns a boolean indicating whether or not the action was handled by all
+  // Returns a boolean indicating whether or not the event was handled by all
   //   substates.
   function sendConcurrent() {
     var args = slice.call(arguments), handled = true, state, i, n;
@@ -380,7 +380,7 @@
     this.superstate    = null;
     this.enters        = [];
     this.exits         = [];
-    this.actions       = {};
+    this.events        = {};
     this.concurrent    = !!opts.concurrent;
     this.history       = !!(opts.H);
     this.deep          = opts.H === '*';
@@ -490,16 +490,16 @@
     // Returns the receiver.
     exit: function(f) { this.exits.push(f); return this; },
 
-    // Public: Registers an action handler to be called when an action with a
+    // Public: Registers an event handler to be called when an event with a
     // matching name is sent to the state via the `send` method.
     //
-    // Only one action handler may be registered per action.
+    // Only one event handler may be registered per event.
     //
-    // name - The name of the action.
-    // f    - A function to call when the action is sent.
+    // name - The name of the event.
+    // f    - A function to call when the event occurs.
     //
     // Returns the receiver.
-    action: function(name, f) { this.actions[name] = f; return this; },
+    event: function(name, f) { this.events[name] = f; return this; },
 
     // Public: Defines a condition state on the receiver state. Condition states
     // are consulted when entering a clustered state without specified destination
@@ -612,9 +612,9 @@
     },
 
     // Public: Sets up a transition from the receiver state to the given
-    // destination states. Transitions are usually triggered during action methods
-    // called by the `send` method. This method should be called on the root state
-    // to send the statechart into its initial set of current states.
+    // destination states. Transitions are usually triggered during event
+    // handlers called by the `send` method. This method should be called on the
+    // root state to send the statechart into its initial set of current states.
     //
     // paths - Zero or more strings representing destination state paths (default:
     //         `[]`).
@@ -695,35 +695,35 @@
       return this;
     },
 
-    // Public: Sends an action to the statechart. A statechart handles an action
-    // by giving each current leaf state an opportunity to handle the action.
-    // Actions bubble up superstate chains as long as handler methods do not
-    // return a truthy value. When a handler does return a truthy value the
-    // bubbling is canceled. A handler method is simply a method who's name
-    // matches the name passed to `send`.
+    // Public: Sends an event to the statechart. A statechart handles an event
+    // by giving each current leaf state an opportunity to handle it. Events
+    // bubble up superstate chains as long as handler methods do not return a
+    // truthy value. When a handler does return a truthy value (indicating that
+    // it has handled the event) the bubbling is canceled. A handler method is
+    // registered with the `event` method.
     //
-    // action  - A string containing the action name.
+    // event   - A string containing the event name.
     // args... - Zero or more arguments that get passed on to the handler methods.
     //
-    // Returns a boolean indicating whether or not the action was handled.
+    // Returns a boolean indicating whether or not the event was handled.
     // Throws `Error` if the state is not current.
     send: function() {
-      var args = slice.call(arguments), actions = this.actions, handled;
+      var args = slice.call(arguments), events = this.events, handled;
 
       if (!this.__isCurrent__) {
-        throw new Error('State#send: attempted to send an action to a state that is not current: ' + this);
+        throw new Error('State#send: attempted to send an event to a state that is not current: ' + this);
       }
 
       if (this === this.root()) {
-        trace.call(this, 'State: [ACTION] : ' + args[0]);
+        trace.call(this, 'State: [EVENT]  : ' + args[0]);
       }
 
       handled = this.concurrent ? sendConcurrent.apply(this, arguments) :
         sendClustered.apply(this, arguments);
 
-      if (!handled && typeof actions[args[0]] === 'function') {
+      if (!handled && typeof events[args[0]] === 'function') {
         this.__isSending__ = true;
-        handled = !!actions[args[0]].apply(this, args.slice(1));
+        handled = !!events[args[0]].apply(this, args.slice(1));
         this.__isSending__ = false;
       }
 
