@@ -5,7 +5,7 @@
   "repository" : {
     "type": "git",
     "url": "http://github.com/burrows/statechart.js.git"
-  }
+  },
   "devDependencies": {
     "jshint": "~1.1",
     "jasmine-node": "~1.3"
