@@ -823,6 +823,11 @@ describe('State#resolve', function() {
   it('should return null when given an invalid path', function() {
     expect(root.resolve('/a/b/x')).toBeNull();
   });
+
+  it('should return null when given given null or undefined', function() {
+    expect(root.resolve(null)).toBeNull();
+    expect(root.resolve(undefined)).toBeNull();
+  });
 });
 
 }());

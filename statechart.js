@@ -762,6 +762,8 @@
     resolve: function(path, origPath, origState) {
       var head, next;
 
+      if (!path) { return null; }
+
       origPath  = origPath || path;
       origState = origState || this;
       path      = typeof path === 'string' ? path.split('/') : path;
