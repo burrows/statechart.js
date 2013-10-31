@@ -19,9 +19,9 @@ More information on statecharts is available here:
 * http://www.wisdom.weizmann.ac.il/~harel/papers/Statecharts.History.pdf
 * http://www.amazon.com/Constructing-User-Interface-Statecharts-Horrocks/dp/0201342782
 
-# Example
+## Examples
 
-## Lockable Door
+### Lockable Door
 
 ```javascript
 var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
@@ -60,7 +60,7 @@ door.send('lockDoor');
 door.current();          // => [ '/closed/locked' ]
 ```
 
-## Shallow History State
+### Shallow History State
 
 ```javascript
 var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
@@ -92,7 +92,7 @@ sc.goto('/a');
 sc.current(); // => ['/a/a.2']
 ```
 
-## Deep History State
+### Deep History State
 
 ```javascript
 var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
@@ -143,7 +143,7 @@ sc.goto('/b');
 sc.current();  // => ['/b/b.2/b.2.3']
 ```
 
-## Concurrency
+### State Concurrency
 
 ```javascript
 var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
@@ -198,7 +198,7 @@ var word = State.define({concurrent: true}, function() {
     });
   });
 
-  this.event('reset', function() { this.goto(); });
+  this.event('resetClicked', function() { this.goto(); });
 });
 
 word.goto();
@@ -225,7 +225,7 @@ word.current(); // => ['/bold/on', '/underline/on', '/align/justify', '/bullets/
 word.send('numberClicked');
 word.current(); // => ['/bold/on', '/underline/on', '/align/justify', '/bullets/number']
 
-word.send('reset');
+word.send('resetClicked');
 word.current(); // => ['/bold/off', '/underline/off', '/align/left', '/bullets/none']
 ```
 
