@@ -95,7 +95,7 @@
   //
   // Returns nothing.
   function queueTransition(pivot, states, opts) {
-    (this.__transitions__ = this.__transitions__ || []).push(
+    this.__transitions__.push(
       {pivot: pivot, states: states, opts: opts});
   }
 
@@ -388,19 +388,20 @@
       throw new Error('State: history states are not allowed on concurrent states');
     }
 
-    this.name          = name;
-    this.substateMap   = {};
-    this.substates     = [];
-    this.superstate    = null;
-    this.enters        = [];
-    this.exits         = [];
-    this.events        = {};
-    this.concurrent    = !!opts.concurrent;
-    this.history       = !!(opts.H);
-    this.deep          = opts.H === '*';
-    this.__isCurrent__ = false;
-    this.__cache__     = {};
-    this.trace         = false;
+    this.name            = name;
+    this.substateMap     = {};
+    this.substates       = [];
+    this.superstate      = null;
+    this.enters          = [];
+    this.exits           = [];
+    this.events          = {};
+    this.concurrent      = !!opts.concurrent;
+    this.history         = !!(opts.H);
+    this.deep            = opts.H === '*';
+    this.__isCurrent__   = false;
+    this.__cache__       = {};
+    this.__transitions__ = [];
+    this.trace           = false;
 
     if (f) { f.call(this); }
   }
