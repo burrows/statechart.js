@@ -784,21 +784,14 @@
     //
     // path      - A string containing the path to resolve or an array of path
     //             segments.
-    // origPath  - A string containing the original path that we're attempting to
-    //             resolve. Multiple recursive calls are made to this method so we
-    //             need to pass along the original string path for error messages
-    //             in the case where the path cannot be resolved.
-    // origState - The state where path resolution was originally attempted from.
     //
     // Returns the `State` object the path represents if it can be resolve and
     //   `null` otherwise.
-    resolve: function(path, origPath, origState) {
+    resolve: function(path) {
       var head, next;
 
       if (!path) { return null; }
 
-      origPath  = origPath || path;
-      origState = origState || this;
       path      = typeof path === 'string' ? path.split('/') : path;
       head      = path.shift();
 
@@ -818,7 +811,7 @@
 
       if (!next) { return null; }
 
-      return path.length === 0 ? next : next.resolve(path, origPath, origState);
+      return path.length === 0 ? next : next.resolve(path);
     },
 
     // Public: Returns a formatted string with the state's full path.
