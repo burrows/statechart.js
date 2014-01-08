@@ -52,12 +52,6 @@ describe('State constructor function', function() {
     }).toThrow(new Error('State: history states are not allowed on concurrent states'));
   });
 
-  it('should guard against not using the `new` operator', function() {
-    expect(function() {
-      State('a');
-    }).not.toThrow();
-  });
-
   it('should invoke the given function in the context of the new state when given as the second argument', function() {
     var context = null, f = function() { context = this; }, s;
     s = new State('x', f);
@@ -873,6 +867,38 @@ describe('State#resolve', function() {
     expect(root.resolve(null)).toBeNull();
     expect(root.resolve(undefined)).toBeNull();
   });
+});
+
+describe('Subclass of State', function() {
+  var CustomState = (function(Class){
+    var Subclass, constructor, prop;
+
+    Subclass = function(){ Class.apply(this, arguments); }
+    Subclass.prototype = Object.create(Class.prototype); // inherit
+    Subclass.prototype.constructor = Subclass;
+    for (var prop in Class) {
+      if (Class.hasOwnProperty(prop)) {
+        Subclass[prop] = Class[prop];
+      }
+    }
+    return Subclass;
+  }(State));
+
+  describe('CustomState.define', function() {
+    it('creates instances of CustomState', function() {
+      var state = CustomState.define();
+      expect(state instanceof CustomState).toBe(true);
+    });
+  });
+
+  describe('CustomState#state', function() {
+    it('creates instances of CustomState', function() {
+      var root = CustomState.define(),
+          x = root.state('x');
+      expect(x instanceof CustomState).toBe(true);
+    });
+  });
+
 });
 
 }());

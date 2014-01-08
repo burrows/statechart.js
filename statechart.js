@@ -373,14 +373,10 @@
   // Returns nothing.
   // Throws `Error` if both the `concurrent` and `H` options are set.
   function State(name, opts, f) {
-    if (arguments.length === 2) {
-      if (typeof opts === 'function') {
-        f    = opts;
-        opts = {};
-      }
+    if (typeof opts === 'function') {
+      f    = opts;
+      opts = {};
     }
-
-    if (!(this instanceof State)) { return new State(name, opts, f); }
 
     opts = opts || {};
 
@@ -439,7 +435,7 @@
       }
     }
 
-    s = new State('__root__', opts, f);
+    s = new this('__root__', opts, f);
     return s;
   };
 
@@ -472,9 +468,9 @@
   //   });
   //
   // Returns the newly created state.
-  State.prototype.state = function(name) {
-    var s = name instanceof State ? name :
-      State.apply(null, slice.call(arguments));
+  State.prototype.state = function(name, opts, f) {
+    var s = name instanceof this.constructor ? name :
+      new this.constructor(name, opts, f);
     this.addSubstate(s);
     return s;
   };
