@@ -485,7 +485,7 @@
   // f - A function to call when the state is entered.
   //
   // Returns the receiver.
-  State.prototype.enter = function(f) { this.enters.push(f); return this; };
+  State.prototype.enter = function pState_enter(f) { this.enters.push(f); return this; };
 
   // Public: Registers an exit handler to be called with the receiver state
   // is exited. The `context` option passed to `goto` will be passed to the
@@ -497,7 +497,7 @@
   // f - A function to call when the state is exited.
   //
   // Returns the receiver.
-  State.prototype.exit = function(f) { this.exits.push(f); return this; };
+  State.prototype.exit = function pState_exit(f) { this.exits.push(f); return this; };
 
   // Public: A function that can be used to prevent a state from being exited.
   // `destStates` and `context` are the destination states and context that
@@ -518,7 +518,7 @@
   // f    - A function to call when the event occurs.
   //
   // Returns the receiver.
-  State.prototype.event = function(name, f) { this.events[name] = f; return this; };
+  State.prototype.event = function pState_event(name, f) { this.events[name] = f; return this; };
 
   // Public: Defines a condition state on the receiver state. Condition states
   // are consulted when entering a clustered state without specified destination
@@ -543,7 +543,7 @@
   //   });
   //
   // Returns nothing.
-  State.prototype.C = function(f) {
+  State.prototype.C = function pState_C(f) {
     if (this.concurrent) {
       throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
     }
@@ -552,7 +552,7 @@
   };
 
   // Public: Returns an array of paths to all current leaf states.
-  State.prototype.current = function() {
+  State.prototype.current = function pState_current() {
     var states = _current.call(this), paths = [], i, n;
 
     for (i = 0, n = states.length; i < n; i++) {
@@ -569,7 +569,7 @@
   // f - A function object, it will be invoked once for each state.
   //
   // Returns the receiver.
-  State.prototype.each = function(f) {
+  State.prototype.each = function pState_each(f) {
     var i, n;
 
     f(this);
@@ -584,7 +584,7 @@
   // Public: Adds the given state as a substate of the receiver state.
   //
   // Returns the receiver.
-  State.prototype.addSubstate = function(state) {
+  State.prototype.addSubstate = function pState_addSubstate(state) {
     var deep = this.deep;
     this.substateMap[state.name] = state;
     this.substates.push(state);
@@ -597,7 +597,7 @@
   };
 
   // Public: Returns the root state.
-  State.prototype.root = function() {
+  State.prototype.root = function pState_root() {
     return this.__cache__.root = this.__cache__.root ||
       (this.superstate ? this.superstate.root() : this);
   };
@@ -620,7 +620,7 @@
   //   a.path(); // => "/a"
   //   b.path(); // => "/a/b"
   //   c.path(); // => "/a/b/c"
-  State.prototype.path = function() {
+  State.prototype.path = function pState_path() {
     var states = _path.call(this), names = [], i, len;
 
     for (i = 1, len = states.length; i < len; i++) {
@@ -668,7 +668,7 @@
   // Throws an `Error` if multiple pivot states are found between the receiver
   //   and destination states.
   // Throws an `Error` if a destination path is not reachable from the receiver.
-  State.prototype.goto = function() {
+  State.prototype.goto = function pState_goto() {
     var root   = this.root(),
         paths  = flatten(slice.call(arguments)),
         opts   = typeof paths[paths.length - 1] === 'object' ? paths.pop() : {},
@@ -731,7 +731,7 @@
   //
   // Returns a boolean indicating whether or not the event was handled.
   // Throws `Error` if the state is not current.
-  State.prototype.send = function() {
+  State.prototype.send = function pState_send() {
     var args = slice.call(arguments), events = this.events, handled;
 
     if (!this.__isCurrent__) {
@@ -757,14 +757,14 @@
   };
 
   // Public: Resets the statechart by exiting all current states.
-  State.prototype.reset = function() { exit.call(this, {}); };
+  State.prototype.reset = function pState_reset() { exit.call(this, {}); };
 
   // Public: Returns a boolean indicating whether or not the state at the given
   // path is current.
   //
   // Returns `true` or `false`.
   // Throws `Error` if the path cannot be resolved.
-  State.prototype.isCurrent = function(path) {
+  State.prototype.isCurrent = function pState_isCurrent(path) {
     var state = this.resolve(path);
     return !!(state && state.__isCurrent__);
   };
@@ -778,7 +778,7 @@
   //
   // Returns the `State` object the path represents if it can be resolve and
   //   `null` otherwise.
-  State.prototype.resolve = function(path) {
+  State.prototype.resolve = function pState_resolve(path) {
     var head, next;
 
     if (!path) { return null; }
@@ -806,7 +806,7 @@
   };
 
   // Public: Returns a formatted string with the state's full path.
-  State.prototype.toString = function() { return 'State(' + this.path() + ')'; };
+  State.prototype.toString = function pState_toString() { return 'State(' + this.path() + ')'; };
 
   exports.State = State;
 }(typeof exports === 'undefined' ? this.statechart = {} : exports));
