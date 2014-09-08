@@ -465,6 +465,40 @@ describe('State#goto', function() {
   });
 });
 
+describe('canExit', function() {
+  var root, a, b;
+
+  beforeEach(function() {
+    root = new State('root');
+    a = new State('a');
+    b = new State('b');
+
+    root.addSubstate(a);
+    root.addSubstate(b);
+    root.goto();
+  });
+
+  it('blocks transition if it returns false', function(){
+    a.canExit(function(){
+      return false;
+    });
+
+    root.goto('/b');
+    expect(root.current()).toEqual(['/a']);
+  });
+
+  it('gets called with the destination states and context', function(){
+    var canExitArgs;
+    a.canExit(function(){
+      canExitArgs = arguments;
+    });
+
+    root.goto('/b', { context: 'the context' });
+    expect(canExitArgs[0]).toEqual([root.resolve('/b')]);
+    expect(canExitArgs[1]).toEqual('the context');
+  });
+});
+
 describe('condition states', function() {
   var root, a, b, c, d;
 
