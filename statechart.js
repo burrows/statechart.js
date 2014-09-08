@@ -691,7 +691,7 @@
     //   sc.send('bar');
     //   sc.current();   // => ['/a/b']
     //
-    // Returns the receiver.
+    // Returns boolean. `false` if transition failed.
     // Throws an `Error` if called on a non-current non-root state.
     // Throws an `Error` if multiple pivot states are found between the receiver
     //   and destination states.
@@ -724,7 +724,7 @@
 
       if (!canExit.call(pivot, states, opts)){
         trace.call(this, 'State: [GOTO]   : ' + this + ' can not exit]');
-        return this;
+        return false;
       }
 
       trace.call(this, 'State: [GOTO]   : ' + this + ' -> [' + states.join(', ') + ']');
@@ -744,7 +744,7 @@
 
       if (!this.__isSending__) { transition.call(root); }
 
-      return this;
+      return true;
     },
 
     // Public: Sends an event to the statechart. A statechart handles an event

@@ -487,6 +487,14 @@ describe('canExit', function() {
     expect(root.current()).toEqual(['/a']);
   });
 
+  it('causes goto to return false', function(){
+    a.canExit(function(){
+      return false;
+    });
+
+    expect(root.goto('/b')).toBe(false);
+  });
+
   it('gets called with the destination states and context', function(){
     var canExitArgs;
     a.canExit(function(){
