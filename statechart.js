@@ -294,13 +294,31 @@
   // Internal: Exits the receiver state. The actual exiting logic is in the
   // `exitClustered` and `exitConcurrent` methods.
   //
-  // states - An array of destination states.
   // opts   - The options passed to `goto`.
   //
   // Returns the receiver.
   function exit(opts) {
     return this.concurrent ?
       exitConcurrent.call(this, opts) : exitClustered.call(this, opts);
+  }
+
+  // Internal: Asks the receiver state if it can exit.
+  //
+  // destStates - The destination states.
+  // opts       - The options passed to `goto`.
+  //
+  // Returns boolean.
+  function canExit(destStates, opts) {
+    var i, n;
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      if (this.substates[i].__isCurrent__) {
+        if (canExit.call(this.substates[i], destStates, opts) === false) {
+          return false;
+        }
+      }
+    }
+
+    return this.canExit(destStates, opts.context);
   }
 
   // Internal: Sends an event to a clustered state.
@@ -490,6 +508,16 @@
     // Returns the receiver.
     exit: function(f) { this.exits.push(f); return this; },
 
+    // Public: A function that can be used to prevent a state from being exited.
+    // `destStates` and `context` are the destination states and context that
+    // will be transitioned to if the states can be exited.
+    //
+    // destStates - The destination states.
+    // context    - The destination context.
+    //
+    // Returns the receiver.
+    canExit: function(/*destStates, context*/) { return true; },
+
     // Public: Registers an event handler to be called when an event with a
     // matching name is sent to the state via the `send` method.
     //
@@ -644,7 +672,7 @@
     //   sc.send('bar');
     //   sc.current();   // => ['/a/b']
     //
-    // Returns the receiver.
+    // Returns boolean. `false` if transition failed.
     // Throws an `Error` if called on a non-current non-root state.
     // Throws an `Error` if multiple pivot states are found between the receiver
     //   and destination states.
@@ -675,6 +703,11 @@
 
       pivot = pivots[0] || this;
 
+      if (canExit.call(pivot, states, opts) === false){
+        trace.call(this, 'State: [GOTO]   : ' + this + ' can not exit]');
+        return false;
+      }
+
       trace.call(this, 'State: [GOTO]   : ' + this + ' -> [' + states.join(', ') + ']');
 
       if (!this.__isCurrent__ && this.superstate) {
@@ -692,7 +725,7 @@
 
       if (!this.__isSending__) { transition.call(root); }
 
-      return this;
+      return true;
     },
 
     // Public: Sends an event to the statechart. A statechart handles an event
