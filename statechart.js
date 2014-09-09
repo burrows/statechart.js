@@ -129,20 +129,6 @@
     }
   }
 
-  // Internal: Call all registered canExit functions.
-  //
-  // destStates - The destination states.
-  // context    - The destination context.
-  //
-  // Returns boolean. `false` if any canExit function returns false.
-  function callCanExitFunctions(destStates, context) {
-    var i, n;
-    for (i = 0, n = this.canExits.length; i < n; i++) {
-      if (this.canExits[i].call(this, destStates, context) === false) return false;
-    }
-    return true;
-  }
-
   // Internal: Enters a clustered state. Entering a clustered state involves
   // exiting the current substate (if one exists and is not a destination
   // state), invoking the `enter` callbacks on the receiver state, and
@@ -308,7 +294,6 @@
   // Internal: Exits the receiver state. The actual exiting logic is in the
   // `exitClustered` and `exitConcurrent` methods.
   //
-  // states - An array of destination states.
   // opts   - The options passed to `goto`.
   //
   // Returns the receiver.
@@ -328,12 +313,12 @@
     for (i = 0, n = this.substates.length; i < n; i++) {
       if (this.substates[i].__isCurrent__) {
         if (canExit.call(this.substates[i], destStates, opts) === false) {
-          return false
+          return false;
         }
       }
     }
 
-    return callCanExitFunctions.call(this, destStates, opts.context);
+    return this.canExit(destStates, opts.context);
   }
 
   // Internal: Sends an event to a clustered state.
@@ -413,7 +398,6 @@
     this.superstate    = null;
     this.enters        = [];
     this.exits         = [];
-    this.canExits      = [];
     this.events        = {};
     this.concurrent    = !!opts.concurrent;
     this.history       = !!(opts.H);
@@ -524,18 +508,15 @@
     // Returns the receiver.
     exit: function(f) { this.exits.push(f); return this; },
 
-    // Public: Registers a can exit function to be called before the receiver
-    // state is exited. The `context` option passed to `goto` will be passed to
-    // the given function when invoked.
+    // Public: A function that can be used to prevent a state from being exited.
+    // `destStates` and `context` are the destination states and context that
+    // will be transitioned to if the states can be exited.
     //
-    // Multiple canExit functions may be registered per state. They are invoked
-    // in the order in which they are defined.
-    //
-    // f - A function to call before the state is exited. If the function
-    // returns false, no state transition occurs.
+    // destStates - The destination states.
+    // context    - The destination context.
     //
     // Returns the receiver.
-    canExit: function pState_canExit(f) { this.canExits.push(f); return this; },
+    canExit: function(/*destStates, context*/) { return true; },
 
     // Public: Registers an event handler to be called when an event with a
     // matching name is sent to the state via the `send` method.

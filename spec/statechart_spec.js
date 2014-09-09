@@ -479,27 +479,27 @@ describe('canExit', function() {
   });
 
   it('blocks transition if it returns false', function(){
-    a.canExit(function(){
+    a.canExit = function(){
       return false;
-    });
+    };
 
     root.goto('/b');
     expect(root.current()).toEqual(['/a']);
   });
 
   it('causes goto to return false', function(){
-    a.canExit(function(){
+    a.canExit = function(){
       return false;
-    });
+    };
 
     expect(root.goto('/b')).toBe(false);
   });
 
   it('gets called with the destination states and context', function(){
     var canExitArgs;
-    a.canExit(function(){
+    a.canExit = function(){
       canExitArgs = arguments;
-    });
+    };
 
     root.goto('/b', { context: 'the context' });
     expect(canExitArgs[0]).toEqual([root.resolve('/b')]);
