@@ -487,6 +487,13 @@ describe('canExit', function() {
     expect(root.current()).toEqual(['/a']);
   });
 
+  it('does not block transition if it returns anything', function(){
+    root.canExit = function(){ return undefined; };
+
+    expect(root.goto('/b')).toBe(true);
+    expect(root.current()).toEqual(['/b']);
+  });
+
   it('causes goto to return false', function(){
     a.canExit = function(){
       return false;

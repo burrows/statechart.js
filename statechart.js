@@ -703,7 +703,7 @@
 
       pivot = pivots[0] || this;
 
-      if (!canExit.call(pivot, states, opts)){
+      if (canExit.call(pivot, states, opts) === false){
         trace.call(this, 'State: [GOTO]   : ' + this + ' can not exit]');
         return false;
       }
