@@ -1,12 +1,14 @@
-NODE_PATH := build
-SPEC ?= ./spec
-
 default: spec
 
 lint:
 	./node_modules/.bin/jshint statechart.js --config ./jshint.json
 
-spec: lint
-	NODE_PATH=$(NODE_PATH) ./node_modules/.bin/jasmine
+spec: lint spec_node spec_browser
 
-.PHONY: default lint spec
+spec_node:
+	./node_modules/.bin/jasmine
+
+spec_browser:
+	./node_modules/karma/bin/karma start ./karma.config.js
+
+.PHONY: default lint spec spec_node spec_browser
