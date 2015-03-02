@@ -25,20 +25,20 @@
     return result;
   }
 
-  // Internal: Returns a boolean indicating whether there are multiple unique
-  // values in the given array.
-  function multipleUniqs(array) {
-    var x, i, n;
+  // Internal: Returns an array containing the unique states in the given array.
+  function uniqStates(states) {
+    var seen = {}, a = [], path, i, n;
 
-    if (!array || array.length === 0) { return false; }
-
-    x = array[0];
-
-    for (i = 1, n = array.length; i < n; i++) {
-      if (array[i] !== x) { return true; }
+    for (i = 0, n = states.length; i < n; i++) {
+      if (!states[i]) { continue; }
+      path = states[i].path();
+      if (!seen[path]) {
+        a.push(states[i]);
+        seen[path] = true;
+      }
     }
 
-    return false;
+    return a;
   }
 
   // Internal: Calculates and caches the path from the root state to the
@@ -162,7 +162,7 @@
       nexts.push(_path.call(states[i])[selflen]);
     }
 
-    if (multipleUniqs(nexts)) {
+    if (uniqStates(nexts).length > 1) {
       throw new Error("State#enterClustered: attempted to enter multiple substates of " + this + ": " + nexts.join(', '));
     }
 
@@ -697,7 +697,7 @@
         pivots.push(findPivot.call(this, states[i]));
       }
 
-      if (multipleUniqs(pivots)) {
+      if (uniqStates(pivots).length > 1) {
         throw new Error("State#goto: multiple pivot states found between state " + this + " and paths " + paths.join(', '));
       }
 
