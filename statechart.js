@@ -443,376 +443,374 @@
     return s;
   };
 
-  State.prototype = {
-    // Public: Creates a substate with the given name and adds it as a substate to
-    // the receiver state. If a `State` object is given, then it simply adds the
-    // state as a substate. This allows you to split up the definition of your
-    // states instead of defining everything in one place.
-    //
-    // name - A string containing the name of the state or a `State` object.
-    // opts - An object of options to pass to the `State` constructor
-    //        (default: `null`).
-    // f    - A function to invoke in the context of the newly created state
-    //        (default: `null`).
-    //
-    // Examples
-    //
-    //   var s2 = new State('s2');
-    //   s2.state('s21');
-    //   s2.state('s22');
-    //
-    //   var sc = State.define(function() {
-    //     this.state('s', function() {
-    //       this.state('s1', function() {
-    //         this.state('s11');
-    //         this.state('s12');
-    //       });
-    //
-    //       this.state(s2);
-    //     });
-    //   });
-    //
-    // Returns the newly created state.
-    state: function(name) {
-      var s = name instanceof State ? name :
-        State.apply(null, slice.call(arguments));
-      this.addSubstate(s);
-      return s;
-    },
-
-    // Public: Registers an enter handler to be called with the receiver state
-    // is entered. The `context` option passed to `goto` will be passed to the
-    // given function when invoked.
-    //
-    // Multiple enter handlers may be registered per state. They are invoked in
-    // the order in which they are defined.
-    //
-    // f - A function to call when the state is entered.
-    //
-    // Returns the receiver.
-    enter: function(f) { this.enters.push(f); return this; },
-
-    // Public: Registers an exit handler to be called with the receiver state
-    // is exited. The `context` option passed to `goto` will be passed to the
-    // given function when invoked.
-    //
-    // Multiple exit handlers may be registered per state. They are invoked in
-    // the order in which they are defined.
-    //
-    // f - A function to call when the state is exited.
-    //
-    // Returns the receiver.
-    exit: function(f) { this.exits.push(f); return this; },
-
-    // Public: A function that can be used to prevent a state from being exited.
-    // `destStates` and `context` are the destination states and context that
-    // will be transitioned to if the states can be exited.
-    //
-    // destStates - The destination states.
-    // context    - The destination context.
-    //
-    // Returns the receiver.
-    canExit: function(/*destStates, context*/) { return true; },
-
-    // Public: Registers an event handler to be called when an event with a
-    // matching name is sent to the state via the `send` method.
-    //
-    // Only one event handler may be registered per event.
-    //
-    // name - The name of the event.
-    // f    - A function to call when the event occurs.
-    //
-    // Returns the receiver.
-    event: function(name, f) { this.events[name] = f; return this; },
-
-    // Public: Defines a condition state on the receiver state. Condition states
-    // are consulted when entering a clustered state without specified destination
-    // states. The given function should return a path to some substate of the
-    // state that the condition state is defined on.
-    //
-    // f - The condition function.
-    //
-    // Examples
-    //
-    //   var sc = State.define(function() {
-    //     this.state('a', function() {
-    //       this.C(function() {
-    //         if (shouldGoToB) { return './b'; }
-    //         if (shouldGoToC) { return './c'; }
-    //         if (shouldGoToD) { return './d'; }
-    //       });
-    //       this.state('b');
-    //       this.state('c');
-    //       this.state('d');
-    //     });
-    //   });
-    //
-    // Returns nothing.
-    C: function(f) {
-      if (this.concurrent) {
-        throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
-      }
-
-      this.__condition__ = f;
-    },
-
-    // Public: Returns an array of paths to all current leaf states.
-    current: function() {
-      var states = _current.call(this), paths = [], i, n;
-
-      for (i = 0, n = states.length; i < n; i++) {
-        paths.push(states[i].path());
-      }
-
-      return paths;
-    },
-
-    // Public: The `State` iterator - invokes the given function once for each
-    // state in the statechart. The states are traversed in a preorder depth-first
-    // manner.
-    //
-    // f - A function object, it will be invoked once for each state.
-    //
-    // Returns the receiver.
-    each: function(f) {
-      var i, n;
-
-      f(this);
-
-      for (i = 0, n = this.substates.length; i < n; i++) {
-        this.substates[i].each(f);
-      }
-
-      return this;
-    },
-
-    // Public: Adds the given state as a substate of the receiver state.
-    //
-    // Returns the receiver.
-    addSubstate: function(state) {
-      var deep = this.deep;
-      this.substateMap[state.name] = state;
-      this.substates.push(state);
-      state.each(function(s) {
-        s.__cache__ = {};
-        if (deep) { s.history = s.deep = true; }
-      });
-      state.superstate = this;
-      return this;
-    },
-
-    // Public: Returns the root state.
-    root: function() {
-      return this.__cache__.root = this.__cache__.root ||
-        (this.superstate ? this.superstate.root() : this);
-    },
-
-    // Public: Returns a string containing the full path from the root state to
-    // the receiver state. State paths are very similar to unix directory paths.
-    //
-    // Examples
-    //
-    //   var r = new State('root'),
-    //       a = new State('a'),
-    //       b = new State('b'),
-    //       c = new State('c');
-    //
-    //   r.addSubstate(a);
-    //   a.addSubstate(b);
-    //   b.addSubstate(c);
-    //
-    //   r.path(); // => "/"
-    //   a.path(); // => "/a"
-    //   b.path(); // => "/a/b"
-    //   c.path(); // => "/a/b/c"
-    path: function() {
-      var states = _path.call(this), names = [], i, len;
-
-      for (i = 1, len = states.length; i < len; i++) {
-        names.push(states[i].name);
-      }
-
-      return '/' + names.join('/');
-    },
-
-    // Public: Sets up a transition from the receiver state to the given
-    // destination states. Transitions are usually triggered during event
-    // handlers called by the `send` method. This method should be called on the
-    // root state to send the statechart into its initial set of current states.
-    //
-    // paths - Zero or more strings representing destination state paths (default:
-    //         `[]`).
-    // opts  - An object containing zero or more of the following keys:
-    //         context - An object to pass along to the `exit` and `enter` methods
-    //                   invoked during the actual transistion.
-    //         force   - Forces `enter` methods to be called during the transition
-    //                   on states that are already current.
-    //
-    // Examples
-    //
-    //   var sc = State.define(function() {
-    //     this.state('a', function() {
-    //       this.state('b', function() {
-    //         this.foo = function() { this.goto('../c'); };
-    //       });
-    //       this.state('c', function() {
-    //         this.bar = function() { this.goto('../b'); };
-    //       });
-    //     });
-    //   });
-    //
-    //   sc.goto();
-    //   sc.current();   // => ['/a/b']
-    //   sc.send('foo');
-    //   sc.current();   // => ['/a/c']
-    //   sc.send('bar');
-    //   sc.current();   // => ['/a/b']
-    //
-    // Returns boolean. `false` if transition failed.
-    // Throws an `Error` if called on a non-current non-root state.
-    // Throws an `Error` if multiple pivot states are found between the receiver
-    //   and destination states.
-    // Throws an `Error` if a destination path is not reachable from the receiver.
-    goto: function() {
-      var root   = this.root(),
-          paths  = flatten(slice.call(arguments)),
-          opts   = typeof paths[paths.length - 1] === 'object' ? paths.pop() : {},
-          states = [],
-          pivots = [],
-          state, pivot, i, n;
-
-      for (i = 0, n = paths.length; i < n; i++) {
-        if (!(state = this.resolve(paths[i]))) {
-          throw new Error('State#goto: could not resolve path ' + paths[i] + ' from ' + this);
-        }
-
-        states.push(state);
-      }
-
-      for (i = 0, n = states.length; i < n; i++) {
-        pivots.push(findPivot.call(this, states[i]));
-      }
-
-      if (uniqStates(pivots).length > 1) {
-        throw new Error("State#goto: multiple pivot states found between state " + this + " and paths " + paths.join(', '));
-      }
-
-      pivot = pivots[0] || this;
-
-      if (canExit.call(pivot, states, opts) === false){
-        trace.call(this, 'State: [GOTO]   : ' + this + ' can not exit]');
-        return false;
-      }
-
-      trace.call(this, 'State: [GOTO]   : ' + this + ' -> [' + states.join(', ') + ']');
-
-      if (!this.__isCurrent__ && this.superstate) {
-        throw new Error('State#goto: state ' + this + ' is not current');
-      }
-
-      // if the pivot state is a concurrent state and is not also the starting
-      // state, then we're attempting to cross a concurrency boundary, which is
-      // not allowed
-      if (pivot.concurrent && pivot !== this) {
-        throw new Error('State#goto: one or more of the given paths are not reachable from state ' + this + ': ' +  paths.join(', '));
-      }
-
-      queueTransition.call(root, pivot, states, opts);
-
-      if (!this.__isSending__) { transition.call(root); }
-
-      return true;
-    },
-
-    // Public: Sends an event to the statechart. A statechart handles an event
-    // by giving each current leaf state an opportunity to handle it. Events
-    // bubble up superstate chains as long as handler methods do not return a
-    // truthy value. When a handler does return a truthy value (indicating that
-    // it has handled the event) the bubbling is canceled. A handler method is
-    // registered with the `event` method.
-    //
-    // event   - A string containing the event name.
-    // args... - Zero or more arguments that get passed on to the handler methods.
-    //
-    // Returns a boolean indicating whether or not the event was handled.
-    // Throws `Error` if the state is not current.
-    send: function() {
-      var args = slice.call(arguments), events = this.events, handled;
-
-      if (!this.__isCurrent__) {
-        throw new Error('State#send: attempted to send an event to a state that is not current: ' + this);
-      }
-
-      if (this === this.root()) {
-        trace.call(this, 'State: [EVENT]  : ' + args[0]);
-      }
-
-      handled = this.concurrent ? sendConcurrent.apply(this, arguments) :
-        sendClustered.apply(this, arguments);
-
-      if (!handled && typeof events[args[0]] === 'function') {
-        this.__isSending__ = true;
-        handled = !!events[args[0]].apply(this, args.slice(1));
-        this.__isSending__ = false;
-      }
-
-      if (!this.superstate) { transition.call(this); }
-
-      return handled;
-    },
-
-    // Public: Resets the statechart by exiting all current states.
-    reset: function() { exit.call(this, {}); },
-
-    // Public: Returns a boolean indicating whether or not the state at the given
-    // path is current.
-    //
-    // Returns `true` or `false`.
-    // Throws `Error` if the path cannot be resolved.
-    isCurrent: function(path) {
-      var state = this.resolve(path);
-      return !!(state && state.__isCurrent__);
-    },
-
-    // Public: Resolves a string path into an actual `State` object. Paths not
-    // starting with a '/' are resolved relative to the receiver state, paths that
-    // do start with a '/' are resolved relative to the root state.
-    //
-    // path      - A string containing the path to resolve or an array of path
-    //             segments.
-    //
-    // Returns the `State` object the path represents if it can be resolve and
-    //   `null` otherwise.
-    resolve: function(path) {
-      var head, next;
-
-      if (!path) { return null; }
-
-      path      = typeof path === 'string' ? path.split('/') : path;
-      head      = path.shift();
-
-      switch (head) {
-      case '':
-        next = this.root();
-        break;
-      case '.':
-        next = this;
-        break;
-      case '..':
-        next = this.superstate;
-        break;
-      default:
-        next = this.substateMap[head];
-      }
-
-      if (!next) { return null; }
-
-      return path.length === 0 ? next : next.resolve(path);
-    },
-
-    // Public: Returns a formatted string with the state's full path.
-    toString: function() { return 'State(' + this.path() + ')'; }
+  // Public: Creates a substate with the given name and adds it as a substate to
+  // the receiver state. If a `State` object is given, then it simply adds the
+  // state as a substate. This allows you to split up the definition of your
+  // states instead of defining everything in one place.
+  //
+  // name - A string containing the name of the state or a `State` object.
+  // opts - An object of options to pass to the `State` constructor
+  //        (default: `null`).
+  // f    - A function to invoke in the context of the newly created state
+  //        (default: `null`).
+  //
+  // Examples
+  //
+  //   var s2 = new State('s2');
+  //   s2.state('s21');
+  //   s2.state('s22');
+  //
+  //   var sc = State.define(function() {
+  //     this.state('s', function() {
+  //       this.state('s1', function() {
+  //         this.state('s11');
+  //         this.state('s12');
+  //       });
+  //
+  //       this.state(s2);
+  //     });
+  //   });
+  //
+  // Returns the newly created state.
+  State.prototype.state = function(name) {
+    var s = name instanceof State ? name :
+      State.apply(null, slice.call(arguments));
+    this.addSubstate(s);
+    return s;
   };
+
+  // Public: Registers an enter handler to be called with the receiver state
+  // is entered. The `context` option passed to `goto` will be passed to the
+  // given function when invoked.
+  //
+  // Multiple enter handlers may be registered per state. They are invoked in
+  // the order in which they are defined.
+  //
+  // f - A function to call when the state is entered.
+  //
+  // Returns the receiver.
+  State.prototype.enter = function(f) { this.enters.push(f); return this; };
+
+  // Public: Registers an exit handler to be called with the receiver state
+  // is exited. The `context` option passed to `goto` will be passed to the
+  // given function when invoked.
+  //
+  // Multiple exit handlers may be registered per state. They are invoked in
+  // the order in which they are defined.
+  //
+  // f - A function to call when the state is exited.
+  //
+  // Returns the receiver.
+  State.prototype.exit = function(f) { this.exits.push(f); return this; };
+
+  // Public: A function that can be used to prevent a state from being exited.
+  // `destStates` and `context` are the destination states and context that
+  // will be transitioned to if the states can be exited.
+  //
+  // destStates - The destination states.
+  // context    - The destination context.
+  //
+  // Returns the receiver.
+  State.prototype.canExit = function(/*destStates, context*/) { return true; };
+
+  // Public: Registers an event handler to be called when an event with a
+  // matching name is sent to the state via the `send` method.
+  //
+  // Only one event handler may be registered per event.
+  //
+  // name - The name of the event.
+  // f    - A function to call when the event occurs.
+  //
+  // Returns the receiver.
+  State.prototype.event = function(name, f) { this.events[name] = f; return this; };
+
+  // Public: Defines a condition state on the receiver state. Condition states
+  // are consulted when entering a clustered state without specified destination
+  // states. The given function should return a path to some substate of the
+  // state that the condition state is defined on.
+  //
+  // f - The condition function.
+  //
+  // Examples
+  //
+  //   var sc = State.define(function() {
+  //     this.state('a', function() {
+  //       this.C(function() {
+  //         if (shouldGoToB) { return './b'; }
+  //         if (shouldGoToC) { return './c'; }
+  //         if (shouldGoToD) { return './d'; }
+  //       });
+  //       this.state('b');
+  //       this.state('c');
+  //       this.state('d');
+  //     });
+  //   });
+  //
+  // Returns nothing.
+  State.prototype.C = function(f) {
+    if (this.concurrent) {
+      throw new Error('State#C: a concurrent state may not have a condition state: ' + this);
+    }
+
+    this.__condition__ = f;
+  };
+
+  // Public: Returns an array of paths to all current leaf states.
+  State.prototype.current = function() {
+    var states = _current.call(this), paths = [], i, n;
+
+    for (i = 0, n = states.length; i < n; i++) {
+      paths.push(states[i].path());
+    }
+
+    return paths;
+  };
+
+  // Public: The `State` iterator - invokes the given function once for each
+  // state in the statechart. The states are traversed in a preorder depth-first
+  // manner.
+  //
+  // f - A function object, it will be invoked once for each state.
+  //
+  // Returns the receiver.
+  State.prototype.each = function(f) {
+    var i, n;
+
+    f(this);
+
+    for (i = 0, n = this.substates.length; i < n; i++) {
+      this.substates[i].each(f);
+    }
+
+    return this;
+  };
+
+  // Public: Adds the given state as a substate of the receiver state.
+  //
+  // Returns the receiver.
+  State.prototype.addSubstate = function(state) {
+    var deep = this.deep;
+    this.substateMap[state.name] = state;
+    this.substates.push(state);
+    state.each(function(s) {
+      s.__cache__ = {};
+      if (deep) { s.history = s.deep = true; }
+    });
+    state.superstate = this;
+    return this;
+  };
+
+  // Public: Returns the root state.
+  State.prototype.root = function() {
+    return this.__cache__.root = this.__cache__.root ||
+      (this.superstate ? this.superstate.root() : this);
+  };
+
+  // Public: Returns a string containing the full path from the root state to
+  // the receiver state. State paths are very similar to unix directory paths.
+  //
+  // Examples
+  //
+  //   var r = new State('root'),
+  //       a = new State('a'),
+  //       b = new State('b'),
+  //       c = new State('c');
+  //
+  //   r.addSubstate(a);
+  //   a.addSubstate(b);
+  //   b.addSubstate(c);
+  //
+  //   r.path(); // => "/"
+  //   a.path(); // => "/a"
+  //   b.path(); // => "/a/b"
+  //   c.path(); // => "/a/b/c"
+  State.prototype.path = function() {
+    var states = _path.call(this), names = [], i, len;
+
+    for (i = 1, len = states.length; i < len; i++) {
+      names.push(states[i].name);
+    }
+
+    return '/' + names.join('/');
+  };
+
+  // Public: Sets up a transition from the receiver state to the given
+  // destination states. Transitions are usually triggered during event
+  // handlers called by the `send` method. This method should be called on the
+  // root state to send the statechart into its initial set of current states.
+  //
+  // paths - Zero or more strings representing destination state paths (default:
+  //         `[]`).
+  // opts  - An object containing zero or more of the following keys:
+  //         context - An object to pass along to the `exit` and `enter` methods
+  //                   invoked during the actual transistion.
+  //         force   - Forces `enter` methods to be called during the transition
+  //                   on states that are already current.
+  //
+  // Examples
+  //
+  //   var sc = State.define(function() {
+  //     this.state('a', function() {
+  //       this.state('b', function() {
+  //         this.foo = function() { this.goto('../c'); };
+  //       });
+  //       this.state('c', function() {
+  //         this.bar = function() { this.goto('../b'); };
+  //       });
+  //     });
+  //   });
+  //
+  //   sc.goto();
+  //   sc.current();   // => ['/a/b']
+  //   sc.send('foo');
+  //   sc.current();   // => ['/a/c']
+  //   sc.send('bar');
+  //   sc.current();   // => ['/a/b']
+  //
+  // Returns boolean. `false` if transition failed.
+  // Throws an `Error` if called on a non-current non-root state.
+  // Throws an `Error` if multiple pivot states are found between the receiver
+  //   and destination states.
+  // Throws an `Error` if a destination path is not reachable from the receiver.
+  State.prototype.goto = function() {
+    var root   = this.root(),
+        paths  = flatten(slice.call(arguments)),
+        opts   = typeof paths[paths.length - 1] === 'object' ? paths.pop() : {},
+        states = [],
+        pivots = [],
+        state, pivot, i, n;
+
+    for (i = 0, n = paths.length; i < n; i++) {
+      if (!(state = this.resolve(paths[i]))) {
+        throw new Error('State#goto: could not resolve path ' + paths[i] + ' from ' + this);
+      }
+
+      states.push(state);
+    }
+
+    for (i = 0, n = states.length; i < n; i++) {
+      pivots.push(findPivot.call(this, states[i]));
+    }
+
+    if (uniqStates(pivots).length > 1) {
+      throw new Error("State#goto: multiple pivot states found between state " + this + " and paths " + paths.join(', '));
+    }
+
+    pivot = pivots[0] || this;
+
+    if (canExit.call(pivot, states, opts) === false){
+      trace.call(this, 'State: [GOTO]   : ' + this + ' can not exit]');
+      return false;
+    }
+
+    trace.call(this, 'State: [GOTO]   : ' + this + ' -> [' + states.join(', ') + ']');
+
+    if (!this.__isCurrent__ && this.superstate) {
+      throw new Error('State#goto: state ' + this + ' is not current');
+    }
+
+    // if the pivot state is a concurrent state and is not also the starting
+    // state, then we're attempting to cross a concurrency boundary, which is
+    // not allowed
+    if (pivot.concurrent && pivot !== this) {
+      throw new Error('State#goto: one or more of the given paths are not reachable from state ' + this + ': ' +  paths.join(', '));
+    }
+
+    queueTransition.call(root, pivot, states, opts);
+
+    if (!this.__isSending__) { transition.call(root); }
+
+    return true;
+  };
+
+  // Public: Sends an event to the statechart. A statechart handles an event
+  // by giving each current leaf state an opportunity to handle it. Events
+  // bubble up superstate chains as long as handler methods do not return a
+  // truthy value. When a handler does return a truthy value (indicating that
+  // it has handled the event) the bubbling is canceled. A handler method is
+  // registered with the `event` method.
+  //
+  // event   - A string containing the event name.
+  // args... - Zero or more arguments that get passed on to the handler methods.
+  //
+  // Returns a boolean indicating whether or not the event was handled.
+  // Throws `Error` if the state is not current.
+  State.prototype.send = function() {
+    var args = slice.call(arguments), events = this.events, handled;
+
+    if (!this.__isCurrent__) {
+      throw new Error('State#send: attempted to send an event to a state that is not current: ' + this);
+    }
+
+    if (this === this.root()) {
+      trace.call(this, 'State: [EVENT]  : ' + args[0]);
+    }
+
+    handled = this.concurrent ? sendConcurrent.apply(this, arguments) :
+      sendClustered.apply(this, arguments);
+
+    if (!handled && typeof events[args[0]] === 'function') {
+      this.__isSending__ = true;
+      handled = !!events[args[0]].apply(this, args.slice(1));
+      this.__isSending__ = false;
+    }
+
+    if (!this.superstate) { transition.call(this); }
+
+    return handled;
+  };
+
+  // Public: Resets the statechart by exiting all current states.
+  State.prototype.reset = function() { exit.call(this, {}); };
+
+  // Public: Returns a boolean indicating whether or not the state at the given
+  // path is current.
+  //
+  // Returns `true` or `false`.
+  // Throws `Error` if the path cannot be resolved.
+  State.prototype.isCurrent = function(path) {
+    var state = this.resolve(path);
+    return !!(state && state.__isCurrent__);
+  };
+
+  // Public: Resolves a string path into an actual `State` object. Paths not
+  // starting with a '/' are resolved relative to the receiver state, paths that
+  // do start with a '/' are resolved relative to the root state.
+  //
+  // path      - A string containing the path to resolve or an array of path
+  //             segments.
+  //
+  // Returns the `State` object the path represents if it can be resolve and
+  //   `null` otherwise.
+  State.prototype.resolve = function(path) {
+    var head, next;
+
+    if (!path) { return null; }
+
+    path      = typeof path === 'string' ? path.split('/') : path;
+    head      = path.shift();
+
+    switch (head) {
+    case '':
+      next = this.root();
+      break;
+    case '.':
+      next = this;
+      break;
+    case '..':
+      next = this.superstate;
+      break;
+    default:
+      next = this.substateMap[head];
+    }
+
+    if (!next) { return null; }
+
+    return path.length === 0 ? next : next.resolve(path);
+  };
+
+  // Public: Returns a formatted string with the state's full path.
+  State.prototype.toString = function() { return 'State(' + this.path() + ')'; };
 
   exports.State = State;
 }(typeof exports === 'undefined' ? this.statechart = {} : exports));
