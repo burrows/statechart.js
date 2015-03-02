@@ -3,10 +3,6 @@
 var slice = Array.prototype.slice,
     State = (typeof require === 'function' ? require('../statechart') : window.statechart).State;
 
-//jasmine.pp = function(o) {
-//  return Object.prototype.toString.call(o);
-//}
-
 describe('State constructor function', function() {
   it('should set the `name` property', function() {
     var s = new State('a');
@@ -15,7 +11,7 @@ describe('State constructor function', function() {
 
   it('should set the `substates` property to an empty object', function() {
     var s = new State('a');
-    expect(s.substates).toEqual({});
+    expect(s.substates).toEqual([]);
   });
 
   it('should set `__isCurrent__` to `false`', function() {
@@ -53,7 +49,7 @@ describe('State constructor function', function() {
   it('should throw an exception if `concurrent` and `H` are set', function() {
     expect(function() {
       new State('a', {concurrent: true, H: true});
-    }).toThrow('State: history states are not allowed on concurrent states');
+    }).toThrow(new Error('State: history states are not allowed on concurrent states'));
   });
 
   it('should guard against not using the `new` operator', function() {
@@ -278,20 +274,20 @@ describe('State#goto', function() {
   it('should throw an exception when the receiver state is not current', function() {
     expect(function() {
       d.goto('/a/e/f');
-    }).toThrow("State#goto: state " + d.toString() + " is not current");
+    }).toThrow(new Error("State#goto: state " + d.toString() + " is not current"));
   });
 
   it('should throw an exception when multiple pivot states are found between the receiver and the given destination paths', function() {
     expect(function() {
       c.goto('/a/b/d', '/a/e/f');
-    }).toThrow("State#goto: multiple pivot states found between state " + c.toString() + " and paths /a/b/d, /a/e/f");
+    }).toThrow(new Error("State#goto: multiple pivot states found between state " + c.toString() + " and paths /a/b/d, /a/e/f"));
   });
 
   it('should throw an exception if any given destination state is not reachable from the receiver', function() {
     root.goto('/a/e/g/h/i');
     expect(function() {
       i.goto('/a/e/g/k/l');
-    }).toThrow("State#goto: one or more of the given paths are not reachable from state " + i.toString() + ": /a/e/g/k/l");
+    }).toThrow(new Error("State#goto: one or more of the given paths are not reachable from state " + i.toString() + ": /a/e/g/k/l"));
   });
 
   it('should not throw an exception when the pivot state is the start state and is concurrent', function() {
@@ -306,13 +302,13 @@ describe('State#goto', function() {
   it('should throw an exception when given an invalid path', function() {
     expect(function() {
       c.goto('/a/b/x');
-    }).toThrow("State#goto: could not resolve path /a/b/x from " + c.toString());
+    }).toThrow(new Error("State#goto: could not resolve path /a/b/x from " + c.toString()));
   });
 
   it('should throw an exception when given paths to multiple clustered states', function() {
     expect(function() {
       c.goto('/a/e/f', '/a/e/g');
-    }).toThrow("State#enterClustered: attempted to enter multiple substates of " + e + ": " + [f, g].join(', ') );
+    }).toThrow(new Error("State#enterClustered: attempted to enter multiple substates of " + e + ": " + [f, g].join(', ')));
   });
 
   it('should handle directory-like relative paths', function() {
@@ -558,7 +554,7 @@ describe('condition states', function() {
 
     expect(function() {
       s.C(function() {});
-    }).toThrow("State#C: a concurrent state may not have a condition state: " + s);
+    }).toThrow(new Error("State#C: a concurrent state may not have a condition state: " + s));
   });
 
   it("should throw an exception when the states returned by the condition function don't exist", function() {
@@ -566,7 +562,7 @@ describe('condition states', function() {
 
     expect(function() {
       root.goto('/a');
-    }).toThrow("State#enterClustered: could not resolve path './blah' returned by condition function from " + a);
+    }).toThrow(new Error("State#enterClustered: could not resolve path './blah' returned by condition function from " + a));
   });
 
   it('should cause goto to enter the the state returned by the condition function', function() {

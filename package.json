@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "jshint": "~1.1",
-    "jasmine-node": "~1.3"
+    "jasmine": "^2.1.1"
   }
 }
 
