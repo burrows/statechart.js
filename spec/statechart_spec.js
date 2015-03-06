@@ -1,7 +1,6 @@
 (function() {
 
-var slice = Array.prototype.slice,
-    State = (typeof require === 'function' ? require('../statechart') : window.statechart).State;
+var State = require('../lib').State, slice = Array.prototype.slice;
 
 describe('State constructor function', function() {
   it('should set the `name` property', function() {
