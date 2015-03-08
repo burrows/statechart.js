@@ -25,6 +25,7 @@ describe('Router', function() {
     beforeEach(function() {
       this.foosRoute = router.define('/foos', this.foosSpy = jasmine.createSpy('foos'));
       this.barsRoute = router.define('/bars', this.barsSpy = jasmine.createSpy('bars'));
+      this.bazsRoute = router.define('/bazs', this.bazsSpy = jasmine.createSpy('bazs'), {default: true});
       router.unknown(this.unknownSpy = jasmine.createSpy('unknown route'));
     });
 
@@ -37,6 +38,13 @@ describe('Router', function() {
       it('passes the search params to the callback', function() {
         router._handleLocationChange('/foos', '?a=1&b=2');
         expect(this.foosSpy).toHaveBeenCalledWith({a: '1', b: '2'});
+      });
+
+      it("calls the default route's callback when the path is empty", function() {
+        router._handleLocationChange('', '');
+        expect(this.bazsSpy).toHaveBeenCalled();
+        router._handleLocationChange('/', '');
+        expect(this.bazsSpy.calls.count()).toBe(2);
       });
 
       it('calls the unknown callback when the path does not match any defined routes', function() {
