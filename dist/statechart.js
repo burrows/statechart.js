@@ -47,7 +47,8 @@ this["statechart"] =
 
 	module.exports = {
 	  State: __webpack_require__(1),
-	  Router: __webpack_require__(2)
+	  Router: __webpack_require__(2),
+	  RoutableState: __webpack_require__(3),
 	};
 
 
@@ -874,33 +875,16 @@ this["statechart"] =
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	(function() {
+	/* WEBPACK VAR INJECTION */(function(global) {(function() {
 	  "use strict";
 
-	  var queryString      = __webpack_require__(4),
-	      equals           = __webpack_require__(3),
-	      slice            = Array.prototype.slice,
+	  var queryString      = __webpack_require__(6),
+	      equals           = __webpack_require__(5),
+	      util             = __webpack_require__(4),
 	      escapeRegex      = /[\-{}\[\]+?.,\\\^$|#\s]/g,
 	      namedParam       = /:(\w+)/g,
 	      splatParam       = /\*(\w+)/g,
 	      nameOrSplatParam = /[:*](\w+)/g;
-
-	  function assign(target) {
-	    var sources = slice.call(arguments).slice(1), i, n, k;
-
-	    for (i = 0, n = sources.length; i < n; i++) {
-	      for (k in sources[i]) {
-	        if (sources[i][k] === void 0) {
-	          delete target[k];
-	        }
-	        else {
-	          target[k] = sources[i][k];
-	        }
-	      }
-	    }
-
-	    return target;
-	  }
 
 	  function buildRegex(pattern) {
 	    var re = pattern
@@ -951,7 +935,7 @@ this["statechart"] =
 	  }
 
 	  function Router(opts) {
-	    this.__window__   = (opts && opts.window) || window;
+	    this.__window__   = (opts && opts.window) || global;
 	    this.__routes__   = [];
 	    this.__route__    = null;
 	    this.__params__   = {};
@@ -1013,7 +997,7 @@ this["statechart"] =
 	      this.__params__ = params || {};
 	    }
 	    else {
-	      assign(this.__params__, params);
+	      util.assign(this.__params__, params);
 	    }
 
 	    this._flush();
@@ -1030,7 +1014,7 @@ this["statechart"] =
 	      route = this.__routes__[i];
 
 	      if (match = route.regex.exec(path)) {
-	        params = assign({}, this.__location__.search, extractParams(route, path));
+	        params = util.assign({}, this.__location__.search, extractParams(route, path));
 	        if (this.__route__ !== route || !equals(this.__params__, params)) {
 	          this.__route__  = route;
 	          this.__params__ = params;
@@ -1069,9 +1053,112 @@ this["statechart"] =
 	  module.exports = Router;
 	}());
 
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	(function() {
+	  "use strict";
+
+	  var State  = __webpack_require__(1),
+	      Router = __webpack_require__(2),
+	      util   = __webpack_require__(4),
+	      router = new Router();
+
+	  function RoutableState() {
+	    State.apply(this, arguments);
+	    this.__router__ = router;
+	  }
+
+	  util.assign(RoutableState, State);
+
+	  RoutableState.prototype = Object.create(State.prototype);
+	  RoutableState.prototype.constructor = RoutableState;
+
+	  RoutableState.prototype.route = function(pattern) {
+	    var _this = this;
+
+	    if (this.__route__) {
+	      throw new Error("RoutableState#route: a route as already been defined on " + this);
+	    }
+
+	    this.__route__ = router.define(pattern, function(params) {
+	      _this.root().goto(_this.path(), {force: true, context: params});
+	    });
+
+	    this.enter(function(ctx) {
+	      router.route(this.__route__);
+	      router.params(util.pick(ctx || {}, this.__route__.names));
+	    });
+
+	    this.exit(function(ctx) {
+	      var params = {}, names = this.__route__.names, i, n;
+
+	      for (i = 0, n = names.length; i < n; i++) {
+	        if (!(name in ctx)) {
+	          params[name] = undefined;
+	        }
+	      }
+
+	      router.params(params);
+	    });
+
+	    return this;
+	  };
+
+	  RoutableState.prototype.params = function() {
+	    return router.params.apply(router, arguments);
+	  };
+
+	  RoutableState.prototype.unknown = function(f) {
+	    router.unknown(f);
+	    return this;
+	  };
+
+	  module.exports = RoutableState;
+	}());
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	(function() {
+	  "use strict";
+
+	  var slice = Array.prototype.slice;
+
+	  exports.assign = function assign(target) {
+	    var sources = slice.call(arguments).slice(1), i, n, k;
+
+	    for (i = 0, n = sources.length; i < n; i++) {
+	      for (k in sources[i]) {
+	        if (sources[i][k] === void 0) {
+	          delete target[k];
+	        }
+	        else {
+	          target[k] = sources[i][k];
+	        }
+	      }
+	    }
+
+	    return target;
+	  };
+
+	  exports.pick = function pick(o, keys) {
+	    return keys.reduce(function(acc, k) {
+	      acc[k] = o[k];
+	      return acc;
+	    }, {});
+	  };
+
+	}());
+
+
+/***/ },
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = shallow
@@ -1151,7 +1238,7 @@ this["statechart"] =
 
 
 /***/ },
-/* 4 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
