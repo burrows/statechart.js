@@ -875,7 +875,7 @@ this["statechart"] =
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {(function() {
+	(function() {
 	  "use strict";
 
 	  var queryString      = __webpack_require__(6),
@@ -935,7 +935,7 @@ this["statechart"] =
 	  }
 
 	  function Router(opts) {
-	    this.__window__   = (opts && opts.window) || global;
+	    this.__window__   = (opts && opts.window) || (typeof window !== 'undefined' ? window : {});
 	    this.__routes__   = [];
 	    this.__route__    = null;
 	    this.__params__   = {};
@@ -1053,7 +1053,6 @@ this["statechart"] =
 	  module.exports = Router;
 	}());
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 3 */
@@ -1097,8 +1096,8 @@ this["statechart"] =
 	      var params = {}, names = this.__route__.names, i, n;
 
 	      for (i = 0, n = names.length; i < n; i++) {
-	        if (!(name in ctx)) {
-	          params[name] = undefined;
+	        if (!(names[i] in ctx)) {
+	          params[names[i]] = undefined;
 	        }
 	      }
 
