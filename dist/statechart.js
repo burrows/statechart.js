@@ -1010,7 +1010,6 @@ this["statechart"] =
 	  function Router() {
 	    this.__routes__   = [];
 	    this.__route__    = null;
-	    this.__default__  = null;
 	    this.__params__   = {};
 	    this.__location__ = {path: null, search: {}};
 	  }
@@ -1031,8 +1030,8 @@ this["statechart"] =
 	    this.__routes__.push(route);
 
 	    if (opts && opts.default) {
-	      if (this.__default__) { throw new Error('Router#define: multiple default routes defined'); }
-	      this.__default__ = route;
+	      this.define('', callback);
+	      this.define('/', callback);
 	    }
 
 	    return route;
@@ -1125,12 +1124,7 @@ this["statechart"] =
 	      }
 	    }
 
-	    if ((path === '' || path === '/') && this.__default__) {
-	      this.__default__.callback(params);
-	    }
-	    else if (this.__unknown__) {
-	      this.__unknown__(path);
-	    }
+	    if (this.__unknown__) { this.__unknown__(path); }
 	  };
 
 	  Router.prototype._flush = function() {
