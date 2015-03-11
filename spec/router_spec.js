@@ -29,6 +29,18 @@ describe('Router', function() {
       router.unknown(this.unknownSpy = jasmine.createSpy('unknown route'));
     });
 
+    describe('#recognize', function() {
+      it('returns the first route whose pattern matches the given path', function() {
+        expect(router.recognize('/foos')).toBe(this.foosRoute);
+        expect(router.recognize('/bars')).toBe(this.barsRoute);
+        expect(router.recognize('/bazs')).toBe(this.bazsRoute);
+      });
+
+      it('returns null when no route matches', function() {
+        expect(router.recognize('/asdf')).toBeNull();
+      });
+    });
+
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
         router._handleLocationChange('/foos', '');
@@ -75,6 +87,18 @@ describe('Router', function() {
       this.searchRoute = router.define('/search/:query/p:num', this.searchSpy = jasmine.createSpy('search'));
     });
 
+    describe('#recognize', function() {
+      it('returns the first route whose pattern matches the given path', function() {
+        expect(router.recognize('/foos/12')).toBe(this.foosRoute);
+        expect(router.recognize('/search/acb123/p8')).toBe(this.searchRoute);
+        expect(router.recognize('/search/aaa/p18')).toBe(this.searchRoute);
+      });
+
+      it('returns null when no route matches', function() {
+        expect(router.recognize('/asdf')).toBeNull();
+      });
+    });
+
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
         router._handleLocationChange('/foos/123', '');
@@ -109,8 +133,19 @@ describe('Router', function() {
 
   describe('with routes with splat params', function() {
     beforeEach(function() {
-      router.define('/file/*path', this.fileSpy = jasmine.createSpy('file'));
-      router.define('/foo/*splat1/bar/*splat2', this.twoSplatSpy = jasmine.createSpy('twoSplatSpy'));
+      this.fileRoute = router.define('/file/*path', this.fileSpy = jasmine.createSpy('file'));
+      this.twoSplatRoute = router.define('/foo/*splat1/bar/*splat2', this.twoSplatSpy = jasmine.createSpy('twoSplatSpy'));
+    });
+
+    describe('#recognize', function() {
+      it('returns the first route whose pattern matches the given path', function() {
+        expect(router.recognize('/file/a/b/c')).toBe(this.fileRoute);
+        expect(router.recognize('/foo/a/b/c/bar/d/e/f')).toBe(this.twoSplatRoute);
+      });
+
+      it('returns null when no route matches', function() {
+        expect(router.recognize('/foo/a/b/c/aaa/d/e/f')).toBeNull();
+      });
     });
 
     describe('upon a popstate event', function() {
@@ -126,9 +161,18 @@ describe('Router', function() {
 
   describe('with routes with regular and splat params', function() {
     beforeEach(function() {
-      router.define('/foos/:id/*splat', this.spy = jasmine.createSpy());
+      this.foosRoute = router.define('/foos/:id/*splat', this.spy = jasmine.createSpy());
     });
 
+    describe('#recognize', function() {
+      it('returns the first route whose pattern matches the given path', function() {
+        expect(router.recognize('/foos/99/a/b/c')).toBe(this.foosRoute);
+      });
+
+      it('returns null when no route matches', function() {
+        expect(router.recognize('/foosx/99/a/b/c')).toBeNull();
+      });
+    });
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
         router._handleLocationChange('/foos/456/a/bunch/of/stuff', '');

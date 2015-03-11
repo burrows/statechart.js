@@ -1099,22 +1099,29 @@ this["statechart"] =
 	    return this.__params__;
 	  };
 
-	  Router.prototype._handleLocationChange = function(path, search) {
-	    var params, route, match, i, n;
-
-	    this.__location__ = {path: path, search: queryString.parse(search)};
+	  Router.prototype.recognize = function(path) {
+	    var route, i, n;
 
 	    for (i = 0, n = this.__routes__.length; i < n; i++) {
 	      route = this.__routes__[i];
+	      if (route.regex.exec(path)) { return route; }
+	    }
 
-	      if (match = route.regex.exec(path)) {
-	        params = util.assign({}, this.__location__.search, extractParams(route, path));
-	        if (this.__route__ !== route || !equals(this.__params__, params)) {
-	          this.__route__  = route;
-	          this.__params__ = params;
-	          route.callback(params);
-	        }
-	        return;
+	    return null;
+	  };
+
+	  Router.prototype._handleLocationChange = function(path, search) {
+	    var params, route;
+
+	    this.__location__ = {path: path, search: queryString.parse(search)};
+	    params = util.assign({}, this.__location__.search);
+
+	    if (route = this.recognize(path)) {
+	      params = util.assign(params, extractParams(route, path));
+	      if (this.__route__ !== route || !equals(this.__params__, params)) {
+	        this.__route__  = route;
+	        this.__params__ = params;
+	        route.callback(params);
 	      }
 	    }
 
