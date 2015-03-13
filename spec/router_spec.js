@@ -11,7 +11,7 @@ describe('Router', function() {
         replaceState: jasmine.createSpy('replaceState'),
         pushState: jasmine.createSpy('pushState')
       },
-      location: {pathname: '/', search: ''}
+      location: {pathname: '/', search: '', host: 'http://example.com'},
     };
 
     router.start({window: this.window});
@@ -294,6 +294,53 @@ describe('Router', function() {
         expect(router.urlFor(this.indexRoute)).toBe('/foos');
         expect(router.urlFor(this.showRoute, {id: 9})).toBe('/foos/9');
         expect(router.urlFor(this.searchRoute, {query: 'abc', num: 9})).toBe('/search/abc/p9');
+      });
+    });
+
+    describe('anchor click events', function() {
+      beforeEach(function() {
+        this.event = {
+          target: {tagName: 'A', host: 'http://example.com', pathname: '/foos'},
+          metaKey: false,
+          preventDefault: jasmine.createSpy()
+        };
+      });
+
+      it("invokes the callback for the route that matches the anchor's pathname", function() {
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalled();
+      });
+
+      it('calls preventDefault on the event', function() {
+        router._handleClick(this.event);
+        expect(this.event.preventDefault).toHaveBeenCalled();
+      });
+
+      it('does not handle the event when the metaKey was pressed', function() {
+        this.event.metaKey = true;
+        router._handleClick(this.event);
+        expect(this.indexSpy).not.toHaveBeenCalled();
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
+      it("does not handle the event when the anchor's hostname does not match the current hostname", function() {
+        this.event.target.host = 'http://elsewhere.com';
+        router._handleClick(this.event);
+        expect(this.indexSpy).not.toHaveBeenCalled();
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
+      it("does not handle the event when the clicked element is not an anchor tag", function() {
+        this.event.target.tagName = 'BUTTON';
+        router._handleClick(this.event);
+        expect(this.indexSpy).not.toHaveBeenCalled();
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
+      it("does not handle the event when there is no matching route", function() {
+        this.event.target.pathname = '/does/not/match';
+        router._handleClick(this.event);
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
       });
     });
   });
