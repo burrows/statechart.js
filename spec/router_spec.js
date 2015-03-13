@@ -60,13 +60,6 @@ describe('Router', function() {
         expect(this.foosSpy).toHaveBeenCalledWith({a: '1', b: '2'});
       });
 
-      it("calls the default route's callback when the path is empty", function() {
-        router._handleLocationChange('', {});
-        expect(this.bazsSpy).toHaveBeenCalled();
-        router._handleLocationChange('/', {});
-        expect(this.bazsSpy.calls.count()).toBe(2);
-      });
-
       it('calls the unknown callback when the path does not match any defined routes', function() {
         router._handleLocationChange('/does/not/exist', {});
         expect(this.unknownSpy).toHaveBeenCalledWith('/does/not/exist');

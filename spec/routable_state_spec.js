@@ -5,10 +5,8 @@ var RoutableState = require('../lib/routable_state'), router = require('../lib/r
 describe('RoutableState', function() {
   beforeEach(function() {
     this.statechart = RoutableState.define(function() {
-      this.state('start');
-
       this.state('index', function() {
-        this.route('/foos');
+        this.route('/foos', {default: true});
       });
 
       this.state('show', function() {
@@ -31,7 +29,7 @@ describe('RoutableState', function() {
     };
 
     this.statechart.start({window: this.window});
-    this.statechart.goto('/start');
+    router.flush();
   });
 
   afterEach(function() {
@@ -57,13 +55,21 @@ describe('RoutableState', function() {
 
   describe('on popstate events', function() {
     it('triggers a transition to the state with the matching route', function() {
-      expect(this.statechart.current()).toEqual(['/start']);
+      router._handleLocationChange('/foos/1', '');
+      router.flush();
+      expect(this.statechart.current()).toEqual(['/show']);
       router._handleLocationChange('/foos', '');
       router.flush();
       expect(this.statechart.current()).toEqual(['/index']);
-      router._handleLocationChange('/foos/12', '');
+    });
+
+    it('triggers a transition to the default route when the path is the root path', function() {
+      router._handleLocationChange('/foos/1', '');
       router.flush();
       expect(this.statechart.current()).toEqual(['/show']);
+      router._handleLocationChange('/', '');
+      router.flush();
+      expect(this.statechart.current()).toEqual(['/index']);
     });
 
     describe('with routes defined with a state string', function() {
@@ -99,15 +105,13 @@ describe('RoutableState', function() {
 
   describe('upon entering a state with a defined route', function() {
     it('updates the current location', function() {
-      expect(this.statechart.current()).toEqual(['/start']);
+      this.statechart.goto('/show', {context: {id: 9}});
+      router.flush();
+      expect(this.window.history.pushState).toHaveBeenCalledWith({}, null, '/foos/9');
 
       this.statechart.goto('/index');
       router.flush();
       expect(this.window.history.pushState).toHaveBeenCalledWith({}, null, '/foos');
-
-      this.statechart.goto('/show', {context: {id: 9}});
-      router.flush();
-      expect(this.window.history.pushState).toHaveBeenCalledWith({}, null, '/foos/9');
     });
   });
 
@@ -115,7 +119,7 @@ describe('RoutableState', function() {
     it("clears the route params from the router's params", function() {
       this.statechart.goto('/show', {context: {id: 3}});
       expect(router.params()).toEqual({id: 3});
-      this.statechart.goto('/start');
+      this.statechart.goto('/index');
       expect(router.params()).toEqual({});
     });
   });

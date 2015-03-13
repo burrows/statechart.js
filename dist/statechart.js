@@ -915,7 +915,14 @@ this["statechart"] =
 
 	    this.__route__ = router.define(pattern, function(params) {
 	      _this.root().goto(_this.path(), {force: true, context: params});
-	    }, opts);
+	    });
+
+	    if (opts.default) {
+	      router.define('/', function(params) {
+	        router.replace = true;
+	        _this.root().goto(_this.path(), {force: true, context: params});
+	      });
+	    }
 
 	    this.enter(function(ctx) {
 	      router.route(this.__route__);
@@ -1036,7 +1043,7 @@ this["statechart"] =
 	    return buildUrl(path, search);
 	  };
 
-	  Router.prototype.define = function(pattern, callback, opts) {
+	  Router.prototype.define = function(pattern, callback) {
 	    var route = {
 	      pattern: pattern,
 	      regex: buildRegex(pattern),
@@ -1045,11 +1052,6 @@ this["statechart"] =
 	    };
 
 	    this.__routes__.push(route);
-
-	    if (opts && opts.default) {
-	      this.define('', callback);
-	      this.define('/', callback);
-	    }
 
 	    return route;
 	  };
@@ -1172,12 +1174,14 @@ this["statechart"] =
 	    var curPath = this.__window__.location.pathname,
 	        path    = generatePath(this.__route__, this.__params__),
 	        search  = generateSearch(this.__route__, this.__params__),
-	        url     = buildUrl(path, search);
+	        url     = buildUrl(path, search),
+	        replace = this.replace || curPath === path;
 
-	    this.__window__.history[path === curPath ? 'replaceState' : 'pushState']({}, null, url);
+	    this.__window__.history[replace ? 'replaceState' : 'pushState']({}, null, url);
 
 	    clearTimeout(this._timer);
 	    delete this._timer;
+	    delete this.replace;
 
 	    return this;
 	  };
