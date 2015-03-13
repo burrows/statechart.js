@@ -1026,10 +1026,9 @@ this["statechart"] =
 	  }
 
 	  function Router() {
-	    this.__routes__   = [];
-	    this.__route__    = null;
-	    this.__params__   = {};
-	    this.__location__ = {path: null, search: {}};
+	    this.__routes__ = [];
+	    this.__route__  = null;
+	    this.__params__ = {};
 	  }
 
 	  Router.prototype.urlFor = function(route, params) {
@@ -1068,7 +1067,7 @@ this["statechart"] =
 
 	      this._onPopState = function() {
 	        var loc = _this.__window__.location;
-	        _this._handleLocationChange(loc.pathname, loc.search);
+	        _this._handleLocationChange(loc.pathname, queryString.parse(loc.search));
 	      };
 
 	      this._onClick = function(e) { _this._handleClick(e); };
@@ -1134,8 +1133,7 @@ this["statechart"] =
 	  Router.prototype._handleLocationChange = function(path, search) {
 	    var params, route;
 
-	    this.__location__ = {path: path, search: queryString.parse(search)};
-	    params = util.assign({}, this.__location__.search);
+	    params = util.assign({}, search);
 
 	    if (route = this.recognize(path)) {
 	      params = util.assign(params, extractParams(route, path));
@@ -1171,13 +1169,12 @@ this["statechart"] =
 	  };
 
 	  Router.prototype.flush = function() {
-	    var loc    = this.__location__,
-	        path   = generatePath(this.__route__, this.__params__),
-	        search = generateSearch(this.__route__, this.__params__),
-	        url    = buildUrl(path, search);
+	    var curPath = this.__window__.location.pathname,
+	        path    = generatePath(this.__route__, this.__params__),
+	        search  = generateSearch(this.__route__, this.__params__),
+	        url     = buildUrl(path, search);
 
-	    this.__window__.history[path === loc.path ? 'replaceState' : 'pushState']({}, null, url);
-	    this.__location__ = {path: path, search: search};
+	    this.__window__.history[path === curPath ? 'replaceState' : 'pushState']({}, null, url);
 
 	    clearTimeout(this._timer);
 	    delete this._timer;

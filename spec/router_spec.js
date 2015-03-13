@@ -4,12 +4,20 @@ var router = require('../lib/router');
 
 describe('Router', function() {
   beforeEach(function() {
+    var _this = this;
+
+    var stub = function(x, y, url) {
+      var parts = url.split('?');
+      _this.window.location.pathname = parts[0];
+      _this.window.location.search = parts[1] ? '?' + parts[1] : '';
+    };
+
     this.window = {
       addEventListener: function() {},
       removeEventListener: function() {},
       history: {
-        replaceState: jasmine.createSpy('replaceState'),
-        pushState: jasmine.createSpy('pushState')
+        replaceState: jasmine.createSpy('replaceState').and.callFake(stub),
+        pushState: jasmine.createSpy('pushState').and.callFake(stub)
       },
       location: {pathname: '/', search: '', host: 'http://example.com'},
     };
@@ -43,39 +51,39 @@ describe('Router', function() {
 
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
-        router._handleLocationChange('/foos', '');
+        router._handleLocationChange('/foos', {});
         expect(this.foosSpy).toHaveBeenCalledWith({});
       });
 
       it('passes the search params to the callback', function() {
-        router._handleLocationChange('/foos', '?a=1&b=2');
+        router._handleLocationChange('/foos', {a: '1', b: '2'});
         expect(this.foosSpy).toHaveBeenCalledWith({a: '1', b: '2'});
       });
 
       it("calls the default route's callback when the path is empty", function() {
-        router._handleLocationChange('', '');
+        router._handleLocationChange('', {});
         expect(this.bazsSpy).toHaveBeenCalled();
-        router._handleLocationChange('/', '');
+        router._handleLocationChange('/', {});
         expect(this.bazsSpy.calls.count()).toBe(2);
       });
 
       it('calls the unknown callback when the path does not match any defined routes', function() {
-        router._handleLocationChange('/does/not/exist', '');
+        router._handleLocationChange('/does/not/exist', {});
         expect(this.unknownSpy).toHaveBeenCalledWith('/does/not/exist');
       });
 
       it("updates the router's route", function() {
         expect(router.route()).toBeNull();
-        router._handleLocationChange('/foos', '');
+        router._handleLocationChange('/foos', {});
         expect(router.route()).toBe(this.foosRoute);
 
-        router._handleLocationChange('/bars', '');
+        router._handleLocationChange('/bars', {});
         expect(router.route()).toBe(this.barsRoute);
       });
 
       it("updates the router's params", function() {
         expect(router.params()).toEqual({});
-        router._handleLocationChange('/foos', '?a=1&b=2');
+        router._handleLocationChange('/foos', {a: '1', b: '2'});
         expect(router.params()).toEqual({a: '1', b: '2'});
       });
     });
@@ -101,30 +109,30 @@ describe('Router', function() {
 
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
-        router._handleLocationChange('/foos/123', '');
+        router._handleLocationChange('/foos/123', {});
         expect(this.foosSpy).toHaveBeenCalledWith({id: '123'});
 
-        router._handleLocationChange('/search/some-query/p4', '');
+        router._handleLocationChange('/search/some-query/p4', {});
         expect(this.searchSpy).toHaveBeenCalledWith({query: 'some-query', num: '4'});
       });
 
       it('merges search params into the named params and passes to the callback', function() {
-        router._handleLocationChange('/foos/456', '?a=1&b=2');
+        router._handleLocationChange('/foos/456', {a: '1', b: '2'});
         expect(this.foosSpy).toHaveBeenCalledWith({id: '456', a: '1', b: '2'});
       });
 
       it('does not allow search params to clobber named params', function() {
-        router._handleLocationChange('/foos/456', '?a=1&b=2&id=789');
+        router._handleLocationChange('/foos/456', {a: '1', b: '2', id: '789'});
         expect(this.foosSpy).toHaveBeenCalledWith({id: '456', a: '1', b: '2'});
       });
 
       it("updates the router's route and params", function() {
         expect(router.route()).toBeNull();
-        router._handleLocationChange('/foos/123', '');
+        router._handleLocationChange('/foos/123', {});
         expect(router.route()).toBe(this.foosRoute);
         expect(router.params()).toEqual({id: '123'});
 
-        router._handleLocationChange('/search/abc/p12', '');
+        router._handleLocationChange('/search/abc/p12', {});
         expect(router.route()).toBe(this.searchRoute);
         expect(router.params()).toEqual({query: 'abc', num: '12'});
       });
@@ -150,10 +158,10 @@ describe('Router', function() {
 
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
-        router._handleLocationChange('/file/some/long/path/thing', '');
+        router._handleLocationChange('/file/some/long/path/thing', {});
         expect(this.fileSpy).toHaveBeenCalledWith({path: 'some/long/path/thing'});
 
-        router._handleLocationChange('/foo/a/b/c/bar/d-e-f', '');
+        router._handleLocationChange('/foo/a/b/c/bar/d-e-f', {});
         expect(this.twoSplatSpy).toHaveBeenCalledWith({splat1: 'a/b/c', splat2: 'd-e-f'});
       });
     });
@@ -175,7 +183,7 @@ describe('Router', function() {
     });
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
-        router._handleLocationChange('/foos/456/a/bunch/of/stuff', '');
+        router._handleLocationChange('/foos/456/a/bunch/of/stuff', {});
         expect(this.spy).toHaveBeenCalledWith({id: '456', splat: 'a/bunch/of/stuff'});
       });
     });
