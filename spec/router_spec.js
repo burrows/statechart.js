@@ -301,13 +301,21 @@ describe('Router', function() {
     describe('anchor click events', function() {
       beforeEach(function() {
         this.event = {
-          target: {tagName: 'A', host: 'http://example.com', pathname: '/foos'},
+          which: 1,
+          target: {nodeName: 'A', host: 'http://example.com', pathname: '/foos'},
           metaKey: false,
           preventDefault: jasmine.createSpy()
         };
       });
 
       it("invokes the callback for the route that matches the anchor's pathname", function() {
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalled();
+      });
+
+      it('locates the anchor element when the click event occurs on the child of an achor', function() {
+        var a = this.event.target;
+        this.event.target = {nodeName: 'IMG', parentNode: a};
         router._handleClick(this.event);
         expect(this.indexSpy).toHaveBeenCalled();
       });
@@ -324,6 +332,20 @@ describe('Router', function() {
         expect(this.event.preventDefault).not.toHaveBeenCalled();
       });
 
+      it('does not handle the event when the ctrlKey was pressed', function() {
+        this.event.ctrlKey = true;
+        router._handleClick(this.event);
+        expect(this.indexSpy).not.toHaveBeenCalled();
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
+      it('does not handle the event when which property is 2', function() {
+        this.event.which = 2;
+        router._handleClick(this.event);
+        expect(this.indexSpy).not.toHaveBeenCalled();
+        expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
       it("does not handle the event when the anchor's hostname does not match the current hostname", function() {
         this.event.target.host = 'http://elsewhere.com';
         router._handleClick(this.event);
@@ -331,8 +353,8 @@ describe('Router', function() {
         expect(this.event.preventDefault).not.toHaveBeenCalled();
       });
 
-      it("does not handle the event when the clicked element is not an anchor tag", function() {
-        this.event.target.tagName = 'BUTTON';
+      it('does not handle events that do not occur on or within an anchor element', function() {
+        this.event.target.nodeName = 'BUTTON';
         router._handleClick(this.event);
         expect(this.indexSpy).not.toHaveBeenCalled();
         expect(this.event.preventDefault).not.toHaveBeenCalled();

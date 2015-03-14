@@ -1150,13 +1150,17 @@ this["statechart"] =
 	  };
 
 	  Router.prototype._handleClick = function(e) {
-	    var handle = e.target.host === this.__window__.location.host &&
-	      e.target.tagName && e.target.tagName === 'A' && !e.metaKey &&
-	      this.recognize(e.target.pathname);
+	    var a = e.target;
 
-	    if (handle) {
+	    if (e.ctrlKey || e.metaKey || e.which === 2) { return; }
+
+	    while (a && String(a.nodeName).toLowerCase() !== 'a') { a = a.parentNode; }
+
+	    if (!a) { return; }
+
+	    if (a.host === this.__window__.location.host && this.recognize(a.pathname)) {
 	      e.preventDefault();
-	      this._handleLocationChange(e.target.pathname, e.target.search);
+	      this._handleLocationChange(a.pathname, a.search);
 	    }
 	  };
 
