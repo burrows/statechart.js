@@ -879,6 +879,20 @@ this["statechart"] =
 
 	  var State = __webpack_require__(1), router = __webpack_require__(3), util = __webpack_require__(4);
 
+	  // Public: Provides a `State` subclass that integrates seemlessly with the `Router` singleton.
+	  // `RoutableState` instances have methods for defining routes that map to that particular state.
+	  //
+	  // Examples
+	  //
+	  // var statechart = RoutableState.define(function() {
+	  //   this.state('foosIndex', function() {
+	  //     this.route('/foos');
+	  //   });
+	  //
+	  //   this.state('foosShow', function() {
+	  //     this.route('/foos/:id');
+	  //   });
+	  // });
 	  function RoutableState() {
 	    State.apply(this, arguments);
 	  }
@@ -888,6 +902,21 @@ this["statechart"] =
 	  RoutableState.prototype = Object.create(State.prototype);
 	  RoutableState.prototype.constructor = RoutableState;
 
+	  // Public: Define a route for the current state. When this state is entered the route will be set
+	  // as the current route on the `router` singleton. Also, when the user changes the URL to match
+	  // the route, a state transition is automatically triggered to this state.
+	  //
+	  // Routes can be defined on the state that they map to directly or at some parent state. Defining
+	  // multiple routes at a parent state gives you the ability to control the order in which the
+	  // states are defined and therefore searched for matches.
+	  //
+	  // pattern - A route pattern (see the docs for `Router#define`).
+	  // state   - Either a string containing a state path or an actual `State` object.
+	  // opts    - One or more of the following options:
+	  //           default - Makes this route the default route.
+	  //
+	  // Returns the receiver.
+	  // Throws `Error` if a route has already been defined on the state.
 	  RoutableState.prototype.route = function(pattern, state, opts) {
 	    var _state;
 
@@ -906,6 +935,14 @@ this["statechart"] =
 	    return _state._route(pattern, opts || {});
 	  };
 
+	  // Internal: Defines a route on the receiver state.
+	  //
+	  // pattern - A route pattern (see the docs for `Router#define`).
+	  // opts    - One or more of the following options:
+	  //           default - Makes this route the default route.
+	  //
+	  // Returns the receiver.
+	  // Throws `Error` if a route on the state has already been defined.
 	  RoutableState.prototype._route = function(pattern, opts) {
 	    var _this = this;
 
@@ -946,25 +983,42 @@ this["statechart"] =
 	    return this;
 	  };
 
+	  // Public: Starts the router and triggers a transition to the state that matches the browser's
+	  // current URL. This should be called when the application is started.
+	  //
+	  // Returns the receiver.
 	  RoutableState.prototype.start = function(opts) {
 	    router.start(opts);
 	    return this;
 	  };
 
+	  // Public: Stops the router. This is likely only useful during tests.
+	  //
+	  // Returns the receiver.
 	  RoutableState.prototype.stop = function() {
 	    router.stop();
 	    return this;
 	  };
 
+	  // Public: Get or set the router's current params.
 	  RoutableState.prototype.params = function() {
 	    return router.params.apply(router, arguments);
 	  };
 
+	  // Public: Register an unknown route handler.
 	  RoutableState.prototype.unknown = function(f) {
 	    router.unknown(f);
 	    return this;
 	  };
 
+	  // Public: Returns a URL string for the state indicated by the given path and params.
+	  //
+	  // path   - A string containing the a state path relative to the receiver.
+	  // params - A hash containing query string params (default: `{}`).
+	  //
+	  // Returns a URL string for the given state.
+	  // Throws `Error` if the path cannot be resolved.
+	  // Throws `Error` if the resolved state does not have a route defined.
 	  RoutableState.prototype.urlFor = function(path, params) {
 	    var state = this.resolve(path);
 
