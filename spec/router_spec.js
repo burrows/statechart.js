@@ -33,7 +33,7 @@ describe('Router', function() {
     beforeEach(function() {
       this.foosRoute = router.define('/foos', this.foosSpy = jasmine.createSpy('foos'));
       this.barsRoute = router.define('/bars', this.barsSpy = jasmine.createSpy('bars'));
-      this.bazsRoute = router.define('/bazs', this.bazsSpy = jasmine.createSpy('bazs'), {default: true});
+      router.define('/nope', function() { return false; });
       router.unknown(this.unknownSpy = jasmine.createSpy('unknown route'));
     });
 
@@ -41,7 +41,6 @@ describe('Router', function() {
       it('returns the first route whose pattern matches the given path', function() {
         expect(router.recognize('/foos')).toBe(this.foosRoute);
         expect(router.recognize('/bars')).toBe(this.barsRoute);
-        expect(router.recognize('/bazs')).toBe(this.bazsRoute);
       });
 
       it('returns null when no route matches', function() {
@@ -77,6 +76,17 @@ describe('Router', function() {
       it("updates the router's params", function() {
         expect(router.params()).toEqual({});
         router._handleLocationChange('/foos', {a: '1', b: '2'});
+        expect(router.params()).toEqual({a: '1', b: '2'});
+      });
+
+      it('reverts back to the previous route and params when the matching route callback returns false', function() {
+        router._handleLocationChange('/foos', {a: '1', b: '2'});
+        router.flush();
+        expect(router.route()).toBe(this.foosRoute);
+        expect(router.params()).toEqual({a: '1', b: '2'});
+        router._handleLocationChange('/nope', {});
+        router.flush();
+        expect(router.route()).toBe(this.foosRoute);
         expect(router.params()).toEqual({a: '1', b: '2'});
       });
     });
