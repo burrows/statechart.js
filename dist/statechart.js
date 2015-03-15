@@ -965,6 +965,20 @@ this["statechart"] =
 	    return this;
 	  };
 
+	  RoutableState.prototype.urlFor = function(path, params) {
+	    var state = this.resolve(path);
+
+	    if (!state) {
+	      throw new Error('RoutableState#urlFor: could not resolve path `' + path + '`');
+	    }
+
+	    if (!state.__route__) {
+	      throw new Error('RoutableState#urlFor: state `' + path + '` does not have a route defined');
+	    }
+
+	    return router.urlFor(state.__route__, params || {});
+	  };
+
 	  module.exports = RoutableState;
 	}());
 
@@ -1144,9 +1158,13 @@ this["statechart"] =
 	    if (route = this.recognize(path)) {
 	      params = util.assign(params, extractParams(route, path));
 	      if (this.__route__ !== route || !equals(this.__params__, params)) {
-	        this.__route__  = route;
-	        this.__params__ = params;
-	        route.callback(params);
+	        if (route.callback(params) === false) {
+	          this.flush();
+	        }
+	        else {
+	          this.__route__  = route;
+	          this.__params__ = params;
+	        }
 	      }
 	    }
 

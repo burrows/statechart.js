@@ -16,6 +16,9 @@ describe('RoutableState', function() {
       this.state('other', function() {
         this.route('/bars/:id');
       });
+
+      this.state('noroute', function() {
+      });
     });
 
     this.window = {
@@ -121,6 +124,27 @@ describe('RoutableState', function() {
       expect(router.params()).toEqual({id: 3});
       this.statechart.goto('/index');
       expect(router.params()).toEqual({});
+    });
+  });
+
+  describe('#urlFor', function() {
+    it('throws an error when given an invalid path', function() {
+      var statechart = this.statechart;
+      expect(function() {
+        statechart.urlFor('/foo/bar');
+      }).toThrow(new Error('RoutableState#urlFor: could not resolve path `/foo/bar`'));
+    });
+
+    it("throws an error when given a path to a state that doesn't have a define route", function() {
+      var statechart = this.statechart;
+      expect(function() {
+        statechart.urlFor('/noroute');
+      }).toThrow(new Error('RoutableState#urlFor: state `/noroute` does not have a route defined'));
+    });
+
+    it('returns a URL for the indicated state', function() {
+      expect(this.statechart.urlFor('/index')).toBe('/foos');
+      expect(this.statechart.urlFor('/show', {id: 4})).toBe('/foos/4');
     });
   });
 });
