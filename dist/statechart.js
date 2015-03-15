@@ -920,7 +920,7 @@ this["statechart"] =
 	    if (opts.default) {
 	      router.define('/', function(params) {
 	        router.replace = true;
-	        _this.root().goto(_this.path(), {force: true, context: params});
+	        return _this.root().goto(_this.path(), {force: true, context: params});
 	      });
 	    }
 
