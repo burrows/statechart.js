@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "html5-history-api": "^4.2.0",
-    "query-string": "^1.0.0",
     "shallow-equals": "0.0.0"
   }
 }

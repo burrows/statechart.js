@@ -990,10 +990,10 @@ this["statechart"] =
 	(function() {
 	  "use strict";
 
-	  __webpack_require__(6);
+	  __webpack_require__(7);
 
-	  var queryString      = __webpack_require__(7),
-	      equals           = __webpack_require__(5),
+	  var qs               = __webpack_require__(5),
+	      equals           = __webpack_require__(6),
 	      util             = __webpack_require__(4),
 	      escapeRegex      = /[\-{}\[\]+?.,\\\^$|#\s]/g,
 	      namedParam       = /:(\w+)/g,
@@ -1045,9 +1045,42 @@ this["statechart"] =
 	  }
 
 	  function buildUrl(path, search) {
-	    return Object.keys(search).length ? path + '?' + queryString.stringify(search) : path;
+	    return Object.keys(search).length ? path + '?' + qs.stringify(search) : path;
 	  }
 
+	  // Public: The `Router` constructor. The `Router` class provides an abstraction around the
+	  // browser's URL that allows applications to update the URL upon state changes as well as be
+	  // notified when the URL is changed by the user.
+	  //
+	  // Routes are defined with a pattern and a callback function. The callback is invoked when a user
+	  // changes the URL to match the pattern. The application can sync its own state to the URL by
+	  // informing the router what the current route should be. The router generates a new path based on
+	  // the given route and route params and updates the browser's URL.
+	  //
+	  // Route patterns can be a simple string that is matched exactly or they can contain parameter
+	  // parts. Parameter parts like `:param` match a single path segment while parts like `*splat` can
+	  // match multiple path segments.
+	  //
+	  // Examples
+	  //
+	  //   # define some routes
+	  //   var router      = new Router;
+	  //   var widgetIndex = router.define('/widgets', widgetIndexHandler);
+	  //   var widgetShow  = router.define('/widgets/:id', widgetShowHandler);
+	  //   var file        = router.define('/file/*path', fileHandler);
+	  //
+	  //   # set the current route (this will update the browser URL)
+	  //   router.route(widgetIndex);      # URL is now /widgets
+	  //
+	  //   router.route(widgetShow);
+	  //   router.params({id: 12});        # URL is now /widgets/12
+	  //
+	  //   router.route(file);
+	  //   router.params({path: 'a/b/c'}); # URL is now /file/a/b/c
+	  //
+	  //   # set search params
+	  //   router.route(widgetShow);
+	  //   router.params({id: 8, foo: 'bar'}); # URL is now /widgets/8?foo=bar
 	  function Router() {
 	    this.__routes__ = [];
 	    this.__route__  = null;
@@ -1087,7 +1120,7 @@ this["statechart"] =
 
 	      this._onPopState = function() {
 	        var loc = _this.__location__;
-	        _this._handleLocationChange(loc.pathname, queryString.parse(loc.search));
+	        _this._handleLocationChange(loc.pathname, qs.parse(loc.search));
 	      };
 
 	      this._onClick = function(e) { _this._handleClick(e); };
@@ -1262,6 +1295,16 @@ this["statechart"] =
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+
+	exports.decode = exports.parse = __webpack_require__(8);
+	exports.encode = exports.stringify = __webpack_require__(9);
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
 	module.exports = shallow
 
 	function shallow(a, b, compare) {
@@ -1339,7 +1382,7 @@ this["statechart"] =
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -1358,9 +1401,9 @@ this["statechart"] =
 	 * Update: 2014-11-06 21:35
 	 */
 	(function(factory) {
-	    if ("function" === 'function' && __webpack_require__(8)['amd']) {
+	    if ("function" === 'function' && __webpack_require__(10)['amd']) {
 	        // https://github.com/devote/HTML5-History-API/issues/57#issuecomment-43133600
-	        __webpack_require__(8)(typeof document !== "object" || document.readyState !== "loading" ? [] : "html5-history-api", factory);
+	        __webpack_require__(10)(typeof document !== "object" || document.readyState !== "loading" ? [] : "html5-history-api", factory);
 	    } else {
 	        factory();
 	    }
@@ -2403,79 +2446,188 @@ this["statechart"] =
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_RESULT__;/*!
-		query-string
-		Parse and stringify URL query strings
-		https://github.com/sindresorhus/query-string
-		by Sindre Sorhus
-		MIT License
-	*/
-	(function () {
-		'use strict';
-		var queryString = {};
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-		queryString.parse = function (str) {
-			if (typeof str !== 'string') {
-				return {};
-			}
+	'use strict';
 
-			str = str.trim().replace(/^(\?|#)/, '');
+	// If obj.hasOwnProperty has been overridden, then calling
+	// obj.hasOwnProperty(prop) will break.
+	// See: https://github.com/joyent/node/issues/1707
+	function hasOwnProperty(obj, prop) {
+	  return Object.prototype.hasOwnProperty.call(obj, prop);
+	}
 
-			if (!str) {
-				return {};
-			}
+	module.exports = function(qs, sep, eq, options) {
+	  sep = sep || '&';
+	  eq = eq || '=';
+	  var obj = {};
 
-			return str.trim().split('&').reduce(function (ret, param) {
-				var parts = param.replace(/\+/g, ' ').split('=');
-				var key = parts[0];
-				var val = parts[1];
+	  if (typeof qs !== 'string' || qs.length === 0) {
+	    return obj;
+	  }
 
-				key = decodeURIComponent(key);
-				// missing `=` should be `null`:
-				// http://w3.org/TR/2012/WD-url-20120524/#collect-url-parameters
-				val = val === undefined ? null : decodeURIComponent(val);
+	  var regexp = /\+/g;
+	  qs = qs.split(sep);
 
-				if (!ret.hasOwnProperty(key)) {
-					ret[key] = val;
-				} else if (Array.isArray(ret[key])) {
-					ret[key].push(val);
-				} else {
-					ret[key] = [ret[key], val];
-				}
+	  var maxKeys = 1000;
+	  if (options && typeof options.maxKeys === 'number') {
+	    maxKeys = options.maxKeys;
+	  }
 
-				return ret;
-			}, {});
-		};
+	  var len = qs.length;
+	  // maxKeys <= 0 means that we should not limit keys count
+	  if (maxKeys > 0 && len > maxKeys) {
+	    len = maxKeys;
+	  }
 
-		queryString.stringify = function (obj) {
-			return obj ? Object.keys(obj).map(function (key) {
-				var val = obj[key];
+	  for (var i = 0; i < len; ++i) {
+	    var x = qs[i].replace(regexp, '%20'),
+	        idx = x.indexOf(eq),
+	        kstr, vstr, k, v;
 
-				if (Array.isArray(val)) {
-					return val.map(function (val2) {
-						return encodeURIComponent(key) + '=' + encodeURIComponent(val2);
-					}).join('&');
-				}
+	    if (idx >= 0) {
+	      kstr = x.substr(0, idx);
+	      vstr = x.substr(idx + 1);
+	    } else {
+	      kstr = x;
+	      vstr = '';
+	    }
 
-				return encodeURIComponent(key) + '=' + encodeURIComponent(val);
-			}).join('&') : '';
-		};
+	    k = decodeURIComponent(kstr);
+	    v = decodeURIComponent(vstr);
 
-		if (true) {
-			!(__WEBPACK_AMD_DEFINE_RESULT__ = function() { return queryString; }.call(exports, __webpack_require__, exports, module), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-		} else if (typeof module !== 'undefined' && module.exports) {
-			module.exports = queryString;
-		} else {
-			window.queryString = queryString;
-		}
-	})();
+	    if (!hasOwnProperty(obj, k)) {
+	      obj[k] = v;
+	    } else if (isArray(obj[k])) {
+	      obj[k].push(v);
+	    } else {
+	      obj[k] = [obj[k], v];
+	    }
+	  }
+
+	  return obj;
+	};
+
+	var isArray = Array.isArray || function (xs) {
+	  return Object.prototype.toString.call(xs) === '[object Array]';
+	};
 
 
 /***/ },
-/* 8 */
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+	'use strict';
+
+	var stringifyPrimitive = function(v) {
+	  switch (typeof v) {
+	    case 'string':
+	      return v;
+
+	    case 'boolean':
+	      return v ? 'true' : 'false';
+
+	    case 'number':
+	      return isFinite(v) ? v : '';
+
+	    default:
+	      return '';
+	  }
+	};
+
+	module.exports = function(obj, sep, eq, name) {
+	  sep = sep || '&';
+	  eq = eq || '=';
+	  if (obj === null) {
+	    obj = undefined;
+	  }
+
+	  if (typeof obj === 'object') {
+	    return map(objectKeys(obj), function(k) {
+	      var ks = encodeURIComponent(stringifyPrimitive(k)) + eq;
+	      if (isArray(obj[k])) {
+	        return map(obj[k], function(v) {
+	          return ks + encodeURIComponent(stringifyPrimitive(v));
+	        }).join(sep);
+	      } else {
+	        return ks + encodeURIComponent(stringifyPrimitive(obj[k]));
+	      }
+	    }).join(sep);
+
+	  }
+
+	  if (!name) return '';
+	  return encodeURIComponent(stringifyPrimitive(name)) + eq +
+	         encodeURIComponent(stringifyPrimitive(obj));
+	};
+
+	var isArray = Array.isArray || function (xs) {
+	  return Object.prototype.toString.call(xs) === '[object Array]';
+	};
+
+	function map (xs, f) {
+	  if (xs.map) return xs.map(f);
+	  var res = [];
+	  for (var i = 0; i < xs.length; i++) {
+	    res.push(f(xs[i], i));
+	  }
+	  return res;
+	}
+
+	var objectKeys = Object.keys || function (obj) {
+	  var res = [];
+	  for (var key in obj) {
+	    if (Object.prototype.hasOwnProperty.call(obj, key)) res.push(key);
+	  }
+	  return res;
+	};
+
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function() { throw new Error("define cannot be used indirect"); };
