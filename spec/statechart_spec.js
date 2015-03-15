@@ -99,7 +99,7 @@ describe('State#addSubstate', function() {
   });
 });
 
-describe('Z.State#each', function() {
+describe('State#each', function() {
   it("should yield each state in the receiver's hierarchy", function() {
     var a    = new State('a'),
         b    = new State('b'),
@@ -635,7 +635,7 @@ describe('State#state', function() {
     expect(root.substateMap['x']).toBe(x);
   });
 
-  it('should pass the options to the `Z.State` constructor', function() {
+  it('should pass the options to the `State` constructor', function() {
     var x = root.state('x', {concurrent: true});
     expect(x.concurrent).toBe(true);
   });
