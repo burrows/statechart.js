@@ -19,7 +19,7 @@ describe('Router', function() {
         replaceState: jasmine.createSpy('replaceState').and.callFake(stub),
         pushState: jasmine.createSpy('pushState').and.callFake(stub)
       },
-      location: {pathname: '/', search: '', host: 'http://example.com'},
+      location: {pathname: '/', search: '', host: 'example.com'},
     };
 
     router.start({window: this.window});
@@ -302,7 +302,7 @@ describe('Router', function() {
       beforeEach(function() {
         this.event = {
           which: 1,
-          target: {nodeName: 'A', host: 'http://example.com', pathname: '/foos'},
+          target: {nodeName: 'A', host: 'example.com', pathname: '/foos'},
           metaKey: false,
           preventDefault: jasmine.createSpy()
         };
@@ -347,10 +347,31 @@ describe('Router', function() {
       });
 
       it("does not handle the event when the anchor's hostname does not match the current hostname", function() {
-        this.event.target.host = 'http://elsewhere.com';
+        this.event.target.host = 'elsewhere.com';
         router._handleClick(this.event);
         expect(this.indexSpy).not.toHaveBeenCalled();
         expect(this.event.preventDefault).not.toHaveBeenCalled();
+      });
+
+      it('does handle the event when the anchor host reports the port number', function() {
+        this.event.target.host = 'example.com:80';
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalled();
+        expect(this.event.preventDefault).toHaveBeenCalled();
+      });
+
+      it('does handle the event when the location host reports the port number', function() {
+        this.window.location.host = 'example.com:80';
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalled();
+        expect(this.event.preventDefault).toHaveBeenCalled();
+      });
+
+      it('does handle the event when the anchor pathname does not include the leading slash', function() {
+        this.event.target.pathname = 'foos';
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalled();
+        expect(this.event.preventDefault).toHaveBeenCalled();
       });
 
       it('does not handle events that do not occur on or within an anchor element', function() {
