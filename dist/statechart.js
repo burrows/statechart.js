@@ -1358,6 +1358,8 @@ this["statechart"] =
 	          this.__params__ = params;
 	        }
 	      }
+
+	      return;
 	    }
 
 	    if (this.__unknown__) { this.__unknown__(path); }

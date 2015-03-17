@@ -54,6 +54,11 @@ describe('Router', function() {
         expect(this.foosSpy).toHaveBeenCalledWith({});
       });
 
+      it('does not invoke the unknown handler when a matching route is found', function() {
+        router._handleLocationChange('/foos', {});
+        expect(this.unknownSpy).not.toHaveBeenCalled();
+      });
+
       it('passes the search params to the callback', function() {
         router._handleLocationChange('/foos', {a: '1', b: '2'});
         expect(this.foosSpy).toHaveBeenCalledWith({a: '1', b: '2'});
