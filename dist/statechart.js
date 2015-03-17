@@ -1417,6 +1417,8 @@ this["statechart"] =
 	  //
 	  // Returns the receiver.
 	  Router.prototype.flush = function() {
+	    if (!this.__started__) { return; }
+
 	    var curPath = this.__location__.pathname,
 	        path    = generatePath(this.__route__, this.__params__),
 	        search  = generateSearch(this.__route__, this.__params__),
