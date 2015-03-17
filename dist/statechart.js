@@ -48,6 +48,7 @@ this["statechart"] =
 	module.exports = {
 	  State: __webpack_require__(1),
 	  RoutableState: __webpack_require__(2),
+	  router: __webpack_require__(3)
 	};
 
 
