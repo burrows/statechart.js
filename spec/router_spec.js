@@ -296,12 +296,12 @@ describe('Router', function() {
         expect(router.params()).toEqual({x: 'y'});
       });
 
-      it('deletes params whose value is undefined', function() {
+      it('deletes params whose value is false, null, or undefined', function() {
         router.route(this.searchRoute);
-        router.params({a: 'b', c: 'd'});
-        expect(router.params()).toEqual({a: 'b', c: 'd'});
-        router.params({a: undefined, c: 'd'});
-        expect(router.params()).toEqual({c: 'd'});
+        router.params({a: '1', b: '2', c: '3', d: '4'});
+        expect(router.params()).toEqual({a: '1', b: '2', c: '3', d: '4'});
+        router.params({a: undefined, b: '22', c: false, d: null, e: 0});
+        expect(router.params()).toEqual({b: '22', e: 0});
       });
     });
 
