@@ -912,7 +912,7 @@ this["statechart"] =
 	  // states are defined and therefore searched for matches.
 	  //
 	  // pattern - A route pattern (see the docs for `Router#define`).
-	  // state   - Either a string containing a state path or an actual `State` object.
+	  // state   - A string containing a state path.
 	  // opts    - One or more of the following options:
 	  //           default - Makes this route the default route.
 	  //
@@ -926,7 +926,7 @@ this["statechart"] =
 	      state = null;
 	    }
 
-	    _state = state || this;
+	    _state = state || '.';
 	    _state = typeof _state === 'string' ? this.resolve(_state) : _state;
 
 	    if (!_state) {
