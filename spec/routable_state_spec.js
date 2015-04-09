@@ -54,6 +54,42 @@ describe('RoutableState', function() {
         });
       }).toThrow(new Error('RoutableState#route: invalid state: ./foo/bar'));
     });
+
+    it('registers the route with the router when the state is attached', function() {
+      spyOn(router, 'define');
+      RoutableState.define(function() {
+        this.state('a', function() {
+          this.route('/aaa');
+        });
+      });
+
+      expect(router.define).toHaveBeenCalled();
+      expect(router.define.calls.mostRecent().args[0]).toEqual('/aaa');
+    });
+
+    it('does not register the route with the router when the state is not attached', function() {
+      spyOn(router, 'define');
+      new RoutableState('foo', function() {
+        this.route('/foo');
+      });
+      expect(router.define).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('RoutableState#didAttach', function() {
+    it('registers the pending route with the router', function() {
+      var s = RoutableState.define(), a;
+
+      spyOn(router, 'define');
+
+      a = new RoutableState('a', function() {
+        this.route('/aaa');
+      });
+
+      expect(router.define).not.toHaveBeenCalled();
+      s.state(a);
+      expect(router.define).toHaveBeenCalled();
+    });
   });
 
   describe('on popstate events', function() {

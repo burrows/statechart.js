@@ -497,6 +497,10 @@ this["statechart"] =
 	    return s;
 	  };
 
+	  // Public: Indicates whether the state is the root of the statechart created
+	  // by the `State.define` method.
+	  State.prototype.isRoot = function() { return this.name === '__root__'; };
+
 	  // Public: Creates a substate with the given name and adds it as a substate to
 	  // the receiver state. If a `State` object is given, then it simply adds the
 	  // state as a substate. This allows you to split up the definition of your
@@ -643,16 +647,25 @@ this["statechart"] =
 	  //
 	  // Returns the receiver.
 	  State.prototype.addSubstate = function pState_addSubstate(state) {
-	    var deep = this.deep;
+	    var deep = this.deep, didAttach = this.root().isRoot();
 	    this.substateMap[state.name] = state;
 	    this.substates.push(state);
+	    state.superstate = this;
 	    state.each(function(s) {
 	      s.__cache__ = {};
 	      if (deep) { s.history = s.deep = true; }
+	      if (didAttach) { s.didAttach(); }
 	    });
-	    state.superstate = this;
 	    return this;
 	  };
+
+	  // Internal: Invoked by the `#addSubstate` method when the state has been
+	  // connected to a root statechart. This is currently only used by the
+	  // `RoutableState` substate and should not be invoked by client code.
+	  State.prototype.didAttach = function pState_didAttach() {};
+
+	  // Public: Indicates whether the receiver state is attached to a root statechart node.
+	  State.prototype.isAttached = function pState_isAttached() { return this.root().isRoot(); };
 
 	  // Public: Returns the root state.
 	  State.prototype.root = function pState_root() {
@@ -945,11 +958,23 @@ this["statechart"] =
 	  // Returns the receiver.
 	  // Throws `Error` if a route on the state has already been defined.
 	  RoutableState.prototype._route = function(pattern, opts) {
-	    var _this = this;
-
 	    if (this.__route__) {
 	      throw new Error("RoutableState#route: a route has already been defined on " + this);
 	    }
+
+	    if (this.isAttached()) {
+	      this._registerRoute(pattern, opts);
+	    }
+	    else {
+	      this.__pendingRoute__ = {pattern: pattern, opts: opts};
+	    }
+
+
+	    return this;
+	  };
+
+	  RoutableState.prototype._registerRoute = function(pattern, opts) {
+	    var _this = this;
 
 	    this.__route__ = router.define(pattern, function(params) {
 	      _this.root().goto(_this.path(), {force: true, context: params});
@@ -980,6 +1005,14 @@ this["statechart"] =
 
 	      router.params(params);
 	    });
+	  };
+
+	  // Internal: Registers the state's route with the router if it has one pending.
+	  RoutableState.prototype.didAttach = function() {
+	    if (this.__pendingRoute__) {
+	      this._registerRoute(this.__pendingRoute__.pattern, this.__pendingRoute__.opts);
+	      delete this.__pendingRoute__;
+	    }
 
 	    return this;
 	  };

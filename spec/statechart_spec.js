@@ -97,6 +97,66 @@ describe('State#addSubstate', function() {
     a.addSubstate(c);
     expect(c.superstate).toBe(a);
   });
+
+  it('invokes the didAttach method on the the substate when its connected to the root statechart', function() {
+    var s = State.define(), a = new State('a'), b = new State('b');
+
+    spyOn(a, 'didAttach')
+    spyOn(b, 'didAttach')
+    s.addSubstate(a);
+    expect(a.didAttach).toHaveBeenCalled();
+    a.addSubstate(b);
+    expect(b.didAttach).toHaveBeenCalled();
+  });
+
+  it('invokes the didAttach method on the substate and all of its descendents when a tree of states is connected to the root statechart', function() {
+    var s = State.define(), a = new State('a'), b = new State('b'), c = new State('c');
+
+    spyOn(a, 'didAttach')
+    spyOn(b, 'didAttach')
+    spyOn(c, 'didAttach')
+
+    a.addSubstate(b);
+    a.addSubstate(c);
+
+    expect(a.didAttach).not.toHaveBeenCalled();
+    expect(b.didAttach).not.toHaveBeenCalled();
+    expect(c.didAttach).not.toHaveBeenCalled();
+    s.addSubstate(a);
+    expect(a.didAttach).toHaveBeenCalled();
+    expect(b.didAttach).toHaveBeenCalled();
+    expect(c.didAttach).toHaveBeenCalled();
+  });
+
+  it('does not invoke the didAttach method on the substate when its not connected to the root statechart', function() {
+    var a = new State('a'), b = new State('b');
+
+    spyOn(b, 'didAttach')
+    a.addSubstate(b);
+    expect(b.didAttach).not.toHaveBeenCalled();
+  });
+});
+
+describe('State#isAttached', function() {
+  it('returns true when the state is connected to a root statechart', function() {
+    var s = State.define(), a = new State('a'), b = new State('b');
+
+    s.addSubstate(a);
+    a.addSubstate(b);
+
+    expect(s.isAttached()).toBe(true);
+    expect(a.isAttached()).toBe(true);
+    expect(b.isAttached()).toBe(true);
+  });
+
+  it('returns false when the state is not connected to a root statechart', function() {
+    var a = new State('a'), b = new State('b');
+
+    a.addSubstate(b);
+
+    expect(a.isAttached()).toBe(false);
+    expect(b.isAttached()).toBe(false);
+  });
 });
 
 describe('State#each', function() {
@@ -620,6 +680,25 @@ describe('State.define', function() {
   it('should call the given function in the context of the newly created state', function() {
     var context, s = State.define(function() { context = this; });
     expect(context).toBe(s);
+  });
+});
+
+describe('State#isRoot', function() {
+  it('returns true for the node returned by State.define', function() {
+    expect(State.define().isRoot()).toBe(true);
+  });
+
+  it('returns false for all other states', function() {
+    var r = State.define(),
+        a = new State('b'),
+        b = new State('b');
+
+    r.addSubstate(a);
+    a.addSubstate(b);
+
+    expect((new State).isRoot()).toBe(false);
+    expect(a.isRoot()).toBe(false);
+    expect(b.isRoot()).toBe(false);
   });
 });
 
