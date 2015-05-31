@@ -1426,7 +1426,7 @@ this["statechart"] =
 
 	    if (aHost === locHost && this._recognize(pathname)) {
 	      e.preventDefault();
-	      this._handleLocationChange(pathname, a.search);
+	      this._handleLocationChange(pathname, qs.parse(a.search.replace(/^\?/, '')));
 	    }
 	  };
 

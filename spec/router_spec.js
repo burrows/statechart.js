@@ -317,7 +317,7 @@ describe('Router', function() {
       beforeEach(function() {
         this.event = {
           which: 1,
-          target: {nodeName: 'A', host: 'example.com', pathname: '/foos'},
+          target: {nodeName: 'A', host: 'example.com', pathname: '/foos', search: ''},
           metaKey: false,
           preventDefault: jasmine.createSpy()
         };
@@ -326,6 +326,12 @@ describe('Router', function() {
       it("invokes the callback for the route that matches the anchor's pathname", function() {
         router._handleClick(this.event);
         expect(this.indexSpy).toHaveBeenCalled();
+      });
+
+      it('passes along the search params to the route callback', function() {
+        this.event.target.search = '?foo=1&bar=2';
+        router._handleClick(this.event);
+        expect(this.indexSpy).toHaveBeenCalledWith({foo: '1', bar: '2'});
       });
 
       it('locates the anchor element when the click event occurs on the child of an achor', function() {
