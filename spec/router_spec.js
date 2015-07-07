@@ -94,6 +94,23 @@ describe('Router', function() {
         expect(router.route()).toBe(this.foosRoute);
         expect(router.params()).toEqual({a: '1', b: '2'});
       });
+
+      describe('with a preprocess method defined', function() {
+        beforeEach(function() {
+          router.preprocess = function(path) { return path.replace(/^\/blah_blah/, ''); };
+        });
+
+        afterEach(function() {
+          router.preprocess = undefined;
+        });
+
+        it('passes the path to the preprocess method and attempts to recognize the result', function() {
+          router._handleLocationChange('/blah_blah/foos', {a: '1', b: '2'});
+          router.flush();
+          expect(router.route()).toBe(this.foosRoute);
+          expect(router.params()).toEqual({a: '1', b: '2'});
+        });
+      });
     });
   });
 
@@ -189,6 +206,7 @@ describe('Router', function() {
         expect(router._recognize('/foosx/99/a/b/c')).toBeNull();
       });
     });
+
     describe('upon a popstate event', function() {
       it('invokes the callback for the matched route and passes the extracted params object', function() {
         router._handleLocationChange('/foos/456/a/bunch/of/stuff', {});

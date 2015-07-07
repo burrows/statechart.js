@@ -1381,6 +1381,8 @@ this["statechart"] =
 
 	    params = util.assign({}, search);
 
+	    path = (typeof this.preprocess === 'function') ? this.preprocess(path) : path;
+
 	    if (route = this._recognize(path)) {
 	      params = util.assign(params, extractParams(route, path));
 	      if (this.__route__ !== route || !equals(this.__params__, params)) {
@@ -1450,7 +1452,7 @@ this["statechart"] =
 	  //
 	  // Returns the receiver.
 	  Router.prototype.flush = function() {
-	    if (!this.__started__) { return; }
+	    if (!this.__started__ || !this.__route__) { return this; }
 
 	    var curPath = this.__location__.pathname,
 	        path    = generatePath(this.__route__, this.__params__),
