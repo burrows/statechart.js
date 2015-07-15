@@ -9,7 +9,7 @@ module.exports = {
 
   output:  {
     library: 'statechart',
-    libraryTarget: 'this'
+    libraryTarget: 'umd'
   },
 
   module: {

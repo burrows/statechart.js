@@ -1,5 +1,14 @@
-this["statechart"] =
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define(factory);
+	else if(typeof exports === 'object')
+		exports["statechart"] = factory();
+	else
+		root["statechart"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -2853,4 +2862,6 @@ this["statechart"] =
 
 
 /***/ }
-/******/ ]);
+/******/ ])
+});
+;
