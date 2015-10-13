@@ -140,6 +140,37 @@ describe('RoutableState', function() {
         expect(this.statechart.current()).toEqual(['/C']);
       });
     });
+
+    describe('with a route with a canExit handler that returns false', function() {
+      beforeEach(function() {
+        this.statechart = RoutableState.define(function() {
+          this.state('A', function() {
+            this.route('/a');
+            this.canExit = function() { return false; };
+          });
+
+          this.state('B', function() {
+            this.route('/b');
+          });
+        });
+
+        this.statechart.goto('/A');
+      });
+
+      it('does not change the current state', function() {
+        expect(this.statechart.current()).toEqual(['/A']);
+        router._handleLocationChange('/b', '');
+        router.flush();
+        expect(this.statechart.current()).toEqual(['/A']);
+      });
+
+      it('does not change the current route', function() {
+        expect(router.route().pattern).toEqual('/a');
+        router._handleLocationChange('/b', '');
+        router.flush();
+        expect(router.route().pattern).toEqual('/a');
+      });
+    });
   });
 
   describe('upon entering a state with a defined route', function() {
