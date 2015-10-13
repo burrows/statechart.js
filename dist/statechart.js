@@ -986,7 +986,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var _this = this;
 
 	    this.__route__ = router.define(pattern, function(params) {
-	      _this.root().goto(_this.path(), {force: true, context: params});
+	      return _this.root().goto(_this.path(), {force: true, context: params});
 	    });
 
 	    if (opts.default) {
