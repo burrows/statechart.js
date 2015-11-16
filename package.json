@@ -1,11 +1,23 @@
 {
-  "name": "statechart",
-  "main": "./lib/index.js",
-  "version": "0.0.2",
+  "name": "statechartjs",
+  "version": "0.1.0",
+  "description": "A javascript implementation of a Harel Statechart.",
+  "main": "lib/index.js",
   "repository": {
     "type": "git",
     "url": "http://github.com/burrows/statechart.js.git"
   },
+  "scripts": {
+    "test": "make"
+  },
+  "keywords": [
+    "statechart",
+    "state machine",
+    "routing",
+    "router"
+  ],
+  "author": "Corey Burrows <corey.burrows@gmail.com>",
+  "license": "MIT",
   "devDependencies": {
     "jasmine": "^2.1.1",
     "jshint": "~1.1",
