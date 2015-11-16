@@ -19,9 +19,9 @@ dist/statechart.js: $(SOURCES)
 dist/statechart.min.js: $(SOURCES)
 	./node_modules/.bin/webpack -p --output-file $@
 
-dist: dist/statechart.js dist/statechart.min.js
+package: dist/statechart.js dist/statechart.min.js
 
 clean:
 	rm -rf ./dist
 
-.PHONY: default clean lint spec spec_node spec_browser dist
+.PHONY: default clean lint spec spec_node spec_browser package
