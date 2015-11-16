@@ -88,7 +88,7 @@ door.current();          // => [ '/closed/locked' ]
 ### Shallow History State
 
 ```javascript
-var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
+var State = require('statechartjs').State;
 
 var sc = State.define(function() {
   // State /a is marked as a history state, so any time /a is entered without
@@ -120,7 +120,7 @@ sc.current(); // => ['/a/a.2']
 ### Deep History State
 
 ```javascript
-var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
+var State = require('statechartjs').State;
 
 var sc = State.define(function() {
   // State /a has shallow history tracking.
@@ -171,7 +171,7 @@ sc.current();  // => ['/b/b.2/b.2.3']
 ### State Concurrency
 
 ```javascript
-var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
+var State = require('statechartjs').State;
 
 var word = State.define({concurrent: true}, function() {
   this.state('bold', function() {
