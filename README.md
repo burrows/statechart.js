@@ -19,12 +19,37 @@ More information on statecharts is available here:
 * http://www.wisdom.weizmann.ac.il/~harel/papers/Statecharts.History.pdf
 * http://www.amazon.com/Constructing-User-Interface-Statecharts-Horrocks/dp/0201342782
 
+## Installation
+
+```
+npm install --save statechartjs
+```
+
+## Usage
+
+```javascript
+var State = require('statechartjs').State;
+
+var app = State.define(function() {
+  this.state('a', function() {
+    this.enter(function() {
+    });
+  });
+
+  this.state('b', function() {
+    this.enter(function() {
+    });
+  });
+});
+
+```
+
 ## Examples
 
 ### Lockable Door
 
 ```javascript
-var State = (typeof require === 'function' ? require('statechart') : window.statechart).State;
+var State = require('statechartjs').State;
 
 var door = State.define(function() {
   this.state('closed', function() {
