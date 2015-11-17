@@ -1,5 +1,7 @@
 SOURCES = $(wildcard lib/*.js)
 
+VERSION = $(shell node -e "console.log(JSON.parse(require('fs').readFileSync('./package.json')).version)")
+
 default: spec
 
 lint:
@@ -21,7 +23,13 @@ dist/statechart.min.js: $(SOURCES)
 
 package: dist/statechart.js dist/statechart.min.js
 
+release:
+	@echo Releasing $(VERSION)...
+	npm publish
+	git tag -a v$(VERSION) -m '$(VERSION) release'
+	git push origin v$(VERSION)
+
 clean:
 	rm -rf ./dist
 
-.PHONY: default clean lint spec spec_node spec_browser package
+.PHONY: default clean lint spec spec_node spec_browser package release
