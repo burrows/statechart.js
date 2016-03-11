@@ -1,0 +1,25 @@
+{
+  "name": "statechartjs",
+  "description": "A javascript implementation of a Harel Statechart.",
+  "main": "dist/statechart.js",
+  "version": "0.1.2",
+  "authors": [
+    "Corey Burrows <corey.burrows@gmail.com>"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "statechart",
+    "state",
+    "machine",
+    "routing",
+    "router"
+  ],
+  "homepage": "https://github.com/burrows/statechart.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
