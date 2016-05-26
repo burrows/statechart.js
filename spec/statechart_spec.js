@@ -551,15 +551,15 @@ describe('canExit', function() {
     expect(root.goto('/b')).toBe(false);
   });
 
-  it('gets called with the destination states and context', function(){
+  it('gets called with the destination states, context and other opts', function(){
     var canExitArgs;
     a.canExit = function(){
       canExitArgs = arguments;
     };
 
-    root.goto('/b', { context: 'the context' });
+    root.goto('/b', { context: 'the context', force: true });
     expect(canExitArgs[0]).toEqual([root.resolve('/b')]);
-    expect(canExitArgs[1]).toEqual('the context');
+    expect(canExitArgs[1]).toEqual({context: 'the context', force: true});
   });
 });
 
