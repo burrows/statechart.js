@@ -778,6 +778,15 @@ describe('State#send', function() {
     expect(calls[4]).toBe(root);
   });
 
+  it('should forward the send to the root state when called on a non-root state', function() {
+    b.send('someEvent');
+    expect(calls[0]).toBe(b);
+    expect(calls[1]).toBe(a);
+    expect(calls[2]).toBe(e);
+    expect(calls[3]).toBe(d);
+    expect(calls[4]).toBe(root);
+  });
+
   it('should pass additional arguments to the event handler', function() {
     var bArgs;
 
