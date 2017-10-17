@@ -33,7 +33,7 @@
     "webpack": "1.12.6"
   },
   "dependencies": {
-    "html5-history-api": "4.2.0",
+    "html5-history-api": "^4.2.8",
     "shallow-equals": "0.0.0"
   }
 }
