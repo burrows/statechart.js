@@ -3,6 +3,112 @@
 var State = require('../lib').State, slice = Array.prototype.slice;
 
 describe('State constructor function', function() {
+  describe('with name, options, and body', function() {
+    it('creates a State with the given name, options, and body', function() {
+      var state = new State('x', {H: true}, function() { this.state('y'); });
+
+      expect(state.name).toBe('x');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['y']);
+    });
+  });
+
+  describe('with name and options', function() {
+    it('creates a State with the given name and options', function() {
+      var state = new State('x', {H: true});
+
+      expect(state.name).toBe('x');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with name and body', function() {
+    it('creates a State with the given name and body', function() {
+      var state = new State('x', function() { this.state('y'); });
+
+      expect(state.name).toBe('x');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['y']);
+    });
+  });
+
+  describe('with options and body', function() {
+    it('creates a State with the given options, and body', function() {
+      var state = new State({H: true}, function() { this.state('y'); });
+
+      expect(state.name).toBe('');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['y']);
+    });
+  });
+
+  describe('with a name', function() {
+    it('creates a State with the given name', function() {
+      var state = new State('x');
+
+      expect(state.name).toBe('x');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with options', function() {
+    it('creates a State with the given options', function() {
+      var state = new State({H: true});
+
+      expect(state.name).toBe('');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with a body', function() {
+    it('creates a State with the given body', function() {
+      var state = new State(function() { this.state('y'); });
+
+      expect(state.name).toBe('');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['y']);
+    });
+  });
+
+  describe('with no arguments', function() {
+    it('creates a State', function() {
+      var state = new State;
+
+      expect(state.name).toBe('');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with any other arguments', function() {
+    it('throws an Error', function() {
+      expect(function() { new State(1, 2, 3); }).toThrow();
+      expect(function() { new State('x', {}, {}); }).toThrow();
+      expect(function() { new State('x', function() {}, {}); }).toThrow();
+      expect(function() { new State(function() {}, {}); }).toThrow();
+      expect(function() { new State({}, {}, {}); }).toThrow();
+    });
+  });
+
   it('should set the `name` property', function() {
     var s = new State('a');
     expect(s.name).toBe('a');
@@ -54,12 +160,6 @@ describe('State constructor function', function() {
   it('should invoke the given function in the context of the new state when given as the second argument', function() {
     var context = null, f = function() { context = this; }, s;
     s = new State('x', f);
-    expect(context).toBe(s);
-  });
-
-  it('should invoke the given function in the context of the new state when given as the third argument', function() {
-    var context = null, f = function() { context = this; }, s;
-    s = new State('x', {H: true}, f);
     expect(context).toBe(s);
   });
 });
@@ -134,6 +234,16 @@ describe('State#addSubstate', function() {
     spyOn(b, 'didAttach')
     a.addSubstate(b);
     expect(b.didAttach).not.toHaveBeenCalled();
+  });
+
+  it('throws an error when given a state with the same name as an existing substate', function() {
+    var a = new State('a'), b1 = new State('b'), b2 = new State('b');
+
+    a.addSubstate(b1);
+
+    expect(function() {
+      a.addSubstate(b2);
+    }).toThrow(new Error('State#addSubstate: a substate with the name `b` already exists on state `a`'));
   });
 });
 
@@ -707,32 +817,96 @@ describe('State#state', function() {
 
   beforeEach(function() { root = State.define(); });
 
-  it('should create a substate with the given name on the receiver', function() {
-    var x = root.state('x');
-    expect(x instanceof State).toBe(true);
-    expect(root.substates).toContain(x);
-    expect(root.substateMap['x']).toBe(x);
+  describe('with a name, options, and body', function() {
+    it('creates a substate with the given name, options, and body', function() {
+      var state = root.state('a', {H: true}, function() { this.state('b'); });
+
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('a');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['b']);
+    });
   });
 
-  it('should pass the options to the `State` constructor', function() {
-    var x = root.state('x', {concurrent: true});
-    expect(x.concurrent).toBe(true);
+  describe('with a name and options', function() {
+    it('creates a substate with the given name and options', function() {
+      var state = root.state('a', {H: true});
+
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('a');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(true);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
   });
 
-  it('should call the given function in the context of the newly created state', function() {
-    var context, x = root.state('x', function() { context = this; });
-    expect(context).toBe(x);
+  describe('with a name and body', function() {
+    it('creates a substate with the given name and body', function() {
+      var state = root.state('a', function() { this.state('b'); });
+
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('a');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates.map(function(s) { return s.name; })).toEqual(['b']);
+    });
   });
 
-  describe('when given a `State` instance', function() {
-    it('should add the given state as a substate', function() {
-      var s = new State('s');
+  describe('with a name and state', function() {
+    it('creates a substate with the given name and state', function() {
+      var substate = new State;
+      var state = root.state('a', substate);
 
-      root.state(s);
+      expect(state).toBe(substate);
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('a');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
 
-      expect(root.substates).toContain(s);
-      expect(root.substateMap['s']).toBe(s);
-      expect(s.superstate).toBe(root);
+  describe('with a name', function() {
+    it('creates a substate with the given name', function() {
+      var state = root.state('a');
+
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('a');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with a state', function() {
+    it('creates a substate with the given state', function() {
+      var substate = new State('x');;
+      var state = root.state(substate);
+
+      expect(state).toBe(substate);
+      expect(root.substates).toEqual([state]);
+      expect(state.name).toBe('x');
+      expect(state.concurrent).toBe(false);
+      expect(state.history).toBe(false);
+      expect(state.deep).toBe(false);
+      expect(state.substates).toEqual([]);
+    });
+  });
+
+  describe('with any other arguments', function() {
+    it('throws an Error', function() {
+      expect(function() { root.state(); }).toThrow();
+      expect(function() { root.state(1, 2, 3); }).toThrow();
+      expect(function() { root.state('x', {}, {}); }).toThrow();
+      expect(function() { root.state('x', function() {}, {}); }).toThrow();
+      expect(function() { root.state(function() {}, {}); }).toThrow();
+      expect(function() { root.state({}, {}, {}); }).toThrow();
     });
   });
 });
